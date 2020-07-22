@@ -33,7 +33,9 @@ def index():
     assert github_resp.ok
     email = azure_resp.json()["userPrincipalName"]
     login = github_resp.json()["login"]
-    return "You are {} on Azure AD and {} on GitHub".format(email, login)
+    test_resp = github.get("/orgs/f5devcentral/outside_collaborators")
+    # assert test_resp.ok
+    return "You are {} on Azure AD and {} on GitHub\n {}".format(email, login, test_resp.json())
 
 
 if __name__ == "__main__":
