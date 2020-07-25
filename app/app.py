@@ -85,14 +85,15 @@ def index():
 
     # Get Access Token
     gh_access_token = get_access_token(
-        app_config.GITHUB_INSTALLATION_ID, gh_jwt, '{"members": "read"}')
+        app_config.GITHUB_INSTALLATION_ID, gh_jwt, '{"members": "write"}')
 
-    # Test GitHub API with installation authentication
+    # add user to GitHub Organization
     headers = {
         "Authorization": "Token {}".format(gh_access_token),
-        "Accept": "application/vnd.github.machine-man-preview+json"
+        "Accept": "application/vnd.github.v3+json"
     }
-    resp = requests.get("https://api.github.com/orgs/{}/outside_collaborators".format(app_config.GITHUB_ORG),
+    print("https://api.github.com/orgs/{}/membership/{}".format(app_config.GITHUB_ORG, login))
+    resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(app_config.GITHUB_ORG, login),
                         headers=headers)
     assert resp.ok
 
