@@ -13,10 +13,21 @@ app = Flask(__name__)
 # Load configuration
 app.config.from_object(app_config)
 
-# Build JWT header
-
 
 def create_jwt(app_id):
+    """
+    Create a Github App Authentication JSON Web Token
+
+    Parameters
+    ----------
+    app_id: string
+        Application ID assigned to the GitHub Application
+
+    Returns
+    -------
+    string
+        JSON Web Token (JWT) to use while requesting an GitHub Access Token
+    """
     time_since_epoch_in_seconds = int(time.time())
 
     payload = {
@@ -33,6 +44,23 @@ def create_jwt(app_id):
 
 
 def get_access_token(installation_id, gh_jwt, permissions):
+    """
+    Obtain a GitHub Access Token for Installation Authentication
+
+    Parameters
+    ----------
+    installation_id: string
+        The installation ID for the application installed in your GitHub organization
+    gh_jwt: string
+        The GitHub JSON Web Token (JWT)  
+    permissions: string
+        The permissions/scope for the access token
+
+    Returns
+    -------
+    string
+        Access token for Application API calls (not as the authenticated user)
+    """
     headers = {
         "Authorization": "Bearer {}".format(gh_jwt.decode()),
         "Accept": "application/vnd.github.machine-man-preview+json"
@@ -147,14 +175,18 @@ def index():
 
     # Add user to organization
     if(gh_member):
+        # User is already a member of the GitHub Org
         payload = "You are {} on Azure AD and {} on GitHub\n You are already an Org member".format(
             email, login)
     else:
+        # User is not a member of the GitHub Org
         resp = add_org_member(gh_access_token, login)
         if(resp == "pending"):
+            # Invitation status is pending, so invitation should be available to the user
             payload = "You are {} on Azure AD and {} on GitHub\n Your invitation to join the Org has been sent".format(
                 email, login)
         else:
+            # Unknown invitation status
             payload = "You are {} on Azure AD and {} on GitHub\n There was an error, please contact Cody Green".format(
                 email, login)
     return payload
