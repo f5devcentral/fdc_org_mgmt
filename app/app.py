@@ -46,6 +46,62 @@ def get_access_token(installation_id, gh_jwt, permissions):
     return (resp.json()["token"])
 
 
+def add_org_member(access_token, username):
+    """
+    Add a user to the GitHub Organization
+
+    Parameters
+    ----------
+    access_token: string   
+        GitHub installation access token
+    username: string
+        GitHub username 
+
+    Returns
+    -------
+    string 
+        invite state
+    """
+    headers = {
+        "Authorization": "Token {}".format(access_token),
+        "Accept": "application/vnd.github.v3+json"
+    }
+    resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(app_config.GITHUB_ORG, username),
+                        headers=headers)
+    assert resp.ok
+    return resp.json()["state"]
+
+
+def is_org_member(access_token, username):
+    """ 
+    Add a user to the GitHub Organization
+
+    Parameters
+    ----------
+    access_token: string   
+        GitHub installation access token
+    username: string
+        GitHub username 
+
+    Returns
+    -------
+    boolean 
+        returns if the user is a member of the organization
+    """
+
+    headers = {
+        "Authorization": "Token {}".format(access_token),
+        "Accept": "application/vnd.github.v3+json"
+    }
+    resp = requests.get("https://api.github.com/orgs/{}/members/{}".format(app_config.GITHUB_ORG, username),
+                        headers=headers)
+
+    if resp.status_code != 204:
+        return False
+    else:
+        return True
+
+
 # Build Azure OAuth blueprint
 azure_bp = make_azure_blueprint(
     client_id=app_config.AZURE_CLIENT_ID,
@@ -87,17 +143,21 @@ def index():
     gh_access_token = get_access_token(
         app_config.GITHUB_INSTALLATION_ID, gh_jwt, '{"members": "write"}')
 
-    # add user to GitHub Organization
-    headers = {
-        "Authorization": "Token {}".format(gh_access_token),
-        "Accept": "application/vnd.github.v3+json"
-    }
-    print("https://api.github.com/orgs/{}/membership/{}".format(app_config.GITHUB_ORG, login))
-    resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(app_config.GITHUB_ORG, login),
-                        headers=headers)
-    assert resp.ok
+    gh_member = is_org_member(gh_access_token, login)
 
-    return "You are {} on Azure AD and {} on GitHub\n {}".format(email, login, resp.json())
+    # Add user to organization
+    if(gh_member):
+        payload = "You are {} on Azure AD and {} on GitHub\n You are already an Org member".format(
+            email, login)
+    else:
+        resp = add_org_member(gh_access_token, login)
+        if(resp == "pending"):
+            payload = "You are {} on Azure AD and {} on GitHub\n Your invitation to join the Org has been sent".format(
+                email, login)
+        else:
+            payload = "You are {} on Azure AD and {} on GitHub\n There was an error, please contact Cody Green".format(
+                email, login)
+    return payload
 
 
 if __name__ == "__main__":
