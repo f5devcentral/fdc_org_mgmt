@@ -4,6 +4,7 @@ from flask import Flask, redirect, url_for, render_template
 from flask_dance.contrib.azure import make_azure_blueprint, azure
 from flask_dance.contrib.github import make_github_blueprint, github
 from cryptography.hazmat.backends import default_backend
+from oauthlib.oauth2 import TokenExpiredError
 import jwt
 import requests
 import time
@@ -194,14 +195,20 @@ def index():
         return redirect(url_for("github.login"))
 
     # Get email address
-    azure_resp = azure.get("/v1.0/me")
-    assert azure_resp.ok
-    email = azure_resp.json()["userPrincipalName"]
+    try:
+        azure_resp = azure.get("/v1.0/me")
+        assert azure_resp.ok
+        email = azure_resp.json()["userPrincipalName"]
+    except TokenExpiredError:
+        return redirect(url_for("azure.login"))
 
     # Get GitHub username
-    github_resp = github.get("/user")
-    assert github_resp.ok
-    login = github_resp.json()["login"]
+    try:
+        github_resp = github.get("/user")
+        assert github_resp.ok
+        login = github_resp.json()["login"]
+    except TokenExpiredError:
+        return redirect(url_for("github.login"))
 
     # Create JWT Token for installation authentication
     gh_jwt = create_jwt(app_config.GITHUB_APP_ID)
