@@ -16,6 +16,32 @@ app = Flask(__name__)
 app.config.from_object(app_config)
 
 
+def add_org_member(access_token, username):
+    """
+    Add a user to the GitHub Organization
+
+    Parameters
+    ----------
+    access_token: string
+        GitHub installation access token
+    username: string
+        GitHub username
+
+    Returns
+    -------
+    string
+        invite state
+    """
+    headers = {
+        "Authorization": "Token {}".format(access_token),
+        "Accept": "application/vnd.github.v3+json"
+    }
+    resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(app_config.GITHUB_ORG, username),
+                        headers=headers)
+    assert resp.ok
+    return resp.json()["state"]
+
+
 def create_jwt(app_id):
     """
     Create a Github App Authentication JSON Web Token
@@ -43,6 +69,41 @@ def create_jwt(app_id):
 
     return jwt.encode(
         payload, app_config.GITHUB_APP_KEY, algorithm='RS256')
+
+
+def enroll_user(email, gh_username):
+    # Create JWT Token for installation authentication
+    gh_jwt = create_jwt(app_config.GITHUB_APP_ID)
+
+    # Get Access Token
+    gh_access_token = get_access_token(
+        app_config.GITHUB_INSTALLATION_ID, gh_jwt, '{"members": "write"}')
+
+    # State for Jinja2 to change UI
+    # valid states are:
+    #   - existing
+    #   - enrolling
+    #   - error
+    enrollment_state = None
+
+    # Add user to organization
+    if(is_org_member(gh_access_token, gh_username)):
+        # User is already a member of the GitHub Org
+        enrollment_state = "existing"
+    else:
+        # User is not a member of the GitHub Org
+        resp = add_org_member(gh_access_token, gh_username)
+
+        if(resp == "pending"):
+            # Invitation status is pending, so invitation should be available to the user
+            # add user mapping
+            mapping = store_user_mapping(email, gh_username)
+            enrollment_state = "enrolling"
+        else:
+            # Unknown invitation status
+            enrollment_state = "error"
+
+    return enrollment_state
 
 
 def get_access_token(installation_id, gh_jwt, permissions):
@@ -76,30 +137,68 @@ def get_access_token(installation_id, gh_jwt, permissions):
     return (resp.json()["token"])
 
 
-def add_org_member(access_token, username):
+def get_azure_user(az):
     """
-    Add a user to the GitHub Organization
+    Get user data from Azure Active Directory
 
     Parameters
     ----------
-    access_token: string
-        GitHub installation access token
-    username: string
-        GitHub username
+    az: object
+        flask-dance Azure object
 
     Returns
     -------
     string
-        invite state
+        Azure AD email address
     """
-    headers = {
-        "Authorization": "Token {}".format(access_token),
-        "Accept": "application/vnd.github.v3+json"
-    }
-    resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(app_config.GITHUB_ORG, username),
-                        headers=headers)
-    assert resp.ok
-    return resp.json()["state"]
+
+    azure_resp = azure.get("/v1.0/me")
+    assert azure_resp.ok
+    return azure_resp.json()["userPrincipalName"]
+
+
+def get_github_user(gh):
+    """
+    Get user data from GitHub
+
+    Parameters
+    ----------
+    gh: object
+        flask-dance GitHub object
+
+    Returns
+    -------
+    string 
+        GitHub username
+    """
+    github_resp = github.get("/user")
+    assert github_resp.ok
+    return github_resp.json()["login"]
+
+
+def is_enrolled(email):
+    """
+    Checks if the user exists in the mapping file
+
+    Parameters
+    ----------
+    email: string
+        Azure AD email address
+
+    Returns
+    -------
+    boolean
+        If the user exists in the mapping file
+    """
+    with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
+        json_object = json.load(openfile)
+
+    user_exists = False
+    for user in json_object["users"]:
+        if email.lower() in user:
+            user_exists = True
+
+    return user_exists
 
 
 def is_org_member(access_token, username):
@@ -155,10 +254,7 @@ def store_user_mapping(email, username):
 
     user_obj = {email.lower(): {"username": username.lower()}}
     # add the user mapping if not already present
-    user_exists = False
-    for user in json_object["users"]:
-        if email.lower() in user:
-            user_exists = True
+    user_exists = is_enrolled(email)
 
     if not user_exists:
         json_object["users"].append(user_obj)
@@ -195,61 +291,37 @@ def index():
     if not github.authorized:
         return redirect(url_for("github.login"))
 
+    return render_template("index.j2", user_exists=is_enrolled(get_azure_user(azure)), org=app_config.GITHUB_ORG)
+
+
+if __name__ == "__main__":
+    app.run()
+
+
+@app.route("/enroll")
+def enroll():
+    # Ensure the user is authenticated against Azure and GitHub
+    if not azure.authorized:
+        return redirect(url_for("azure.login"))
+    if not github.authorized:
+        return redirect(url_for("github.login"))
+
     # Get email address
     try:
-        azure_resp = azure.get("/v1.0/me")
-        assert azure_resp.ok
-        email = azure_resp.json()["userPrincipalName"]
+        email = get_azure_user(azure)
     except TokenExpiredError:
         return redirect(url_for("azure.login"))
 
     # Get GitHub username
     try:
-        github_resp = github.get("/user")
-        assert github_resp.ok
-        login = github_resp.json()["login"]
+        gh_username = get_github_user(github)
     except TokenExpiredError:
         return redirect(url_for("github.login"))
 
-    # Create JWT Token for installation authentication
-    gh_jwt = create_jwt(app_config.GITHUB_APP_ID)
-
-    # Get Access Token
-    gh_access_token = get_access_token(
-        app_config.GITHUB_INSTALLATION_ID, gh_jwt, '{"members": "write"}')
-
-    gh_member = is_org_member(gh_access_token, login)
-
-    # State for Jinja2 to change UI
-    # valid states are:
-    #   - existing
-    #   - enrolling
-    #   - error
-    enrollment_state = None
-
-    # Add user to organization
-    if(gh_member):
-        # User is already a member of the GitHub Org
-        enrollment_state = "existing"
-    else:
-        # User is not a member of the GitHub Org
-        resp = add_org_member(gh_access_token, login)
-
-        if(resp == "pending"):
-            # Invitation status is pending, so invitation should be available to the user
-            # add user mapping
-            mapping = store_user_mapping(email, login)
-            enrollment_state = "enrolling"
-        else:
-            # Unknown invitation status
-            enrollment_state = "error"
+    enrollment_state = enroll_user(email, gh_username)
 
     # return payload
-    return render_template("index.j2", enrollment_state=enrollment_state, email=email, org=app_config.GITHUB_ORG, login=login)
-
-
-if __name__ == "__main__":
-    app.run()
+    return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=app_config.GITHUB_ORG, login=gh_username)
 
 
 @app.route("/logout")

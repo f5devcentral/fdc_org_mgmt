@@ -1,21 +1,16 @@
 {% extends 'base.j2' %}
 
 {% block content %}
-    {% if enrollment_state == "enrolling" %}
-        <div class="alert alert-success" role="alert">
-            <h4 class="alert-heading">Enrollment Successful</h4>
-            <p>{{ email }}, you are now enrolled into the {{ org }} organization with GitHub username {{ login }}. <br /> 
-            An invitation has been sent to the email address associated with your GitHub account.</p>
+    <h2>Howdy!</h2>
+    <p>This site will help you enroll in the {{ org }} GitHub Organization. </p>
+    {% if not user_exists %}
+    <br />
+    <a class="btn btn-primary btn-lg" href="/enroll" role="button">Enroll</a>
+    {% else %}
+    <div class="alert alert-success" role="alert">
+            <h4 class="alert-heading">Already Enrollment</h4>
+            <p>You are already enrolled in the {{ org }} organization. <br /> 
+            If you have not accepted the invitation, please check the email address associated with your GitHub account.</p>
         </div>
-        {% elif enrollment_state == "existing" %}
-        <div class="alert alert-warning" role="alert">
-            <h4 class="alert-heading">User Already an Organization Member</h4>
-            <p>{{ email }}, you are already enrolled in the {{ org }} organization with GitHub username {{ login }}.</p>
-        </div>
-        {% elif enrollment_state == "error" %}
-        <div class="alert alert-danger" role="alert">
-            <h4 class="alert-heading">Enrollment Error</h4>
-            <p>{{ email }}, there was an error while enrolling in the {{ org }} organization with GitHub username {{ login }}.</p>
-        </div>
-        {% endif %}
+    {% endif %}
 {% endblock %}
