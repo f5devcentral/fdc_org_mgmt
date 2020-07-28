@@ -7,6 +7,7 @@ from cryptography.hazmat.backends import default_backend
 import jwt
 import requests
 import time
+import json
 
 # Define the Flask app
 app = Flask(__name__)
@@ -130,6 +131,44 @@ def is_org_member(access_token, username):
         return True
 
 
+def store_user_mapping(email, username):
+    """
+    Store the mapping between the user's Azure AD email address and GitHub username
+
+    Parameters
+    ----------
+    email: string
+        user's email address stored in Azure AD
+    username: string
+        user's GitHub username
+
+    Returns
+    -------
+    object
+        Python object representing the user
+    """
+
+    # Open json file
+    with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
+        json_object = json.load(openfile)
+
+    user_obj = {email.lower(): {"username": username.lower()}}
+    # add the user mapping if not already present
+    user_exists = False
+    for user in json_object["users"]:
+        if email.lower() in user:
+            user_exists = True
+
+    if not user_exists:
+        json_object["users"].append(user_obj)
+
+    # write the json object back to file
+    with open(app_config.USER_MAPPING_FILE_PATH, "w") as openfile:
+        openfile.write(json.dumps(json_object, indent=4))
+
+    return user_obj
+
+
 # Build Azure OAuth blueprint
 azure_bp = make_azure_blueprint(
     client_id=app_config.AZURE_CLIENT_ID,
@@ -181,8 +220,11 @@ def index():
     else:
         # User is not a member of the GitHub Org
         resp = add_org_member(gh_access_token, login)
+
         if(resp == "pending"):
             # Invitation status is pending, so invitation should be available to the user
+            # add user mapping
+            mapping = store_user_mapping(email, login)
             payload = "You are {} on Azure AD and {} on GitHub\n Your invitation to join the Org has been sent".format(
                 email, login)
         else:
