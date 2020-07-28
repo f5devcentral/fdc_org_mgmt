@@ -312,6 +312,10 @@ def enroll():
     except TokenExpiredError:
         return redirect(url_for("azure.login"))
 
+    # check if user is already enrolled
+    if is_enrolled(email):
+        return render_template("error.j2", msg="User is already enrolled in the {} GitHub Organization".format(app_config.GITHUB_ORG))
+
     # Get GitHub username
     try:
         gh_username = get_github_user(github)
