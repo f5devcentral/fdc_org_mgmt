@@ -314,14 +314,14 @@ def enroll():
 
     # Get GitHub username
     try:
-        get_github_user(github)
+        gh_username = get_github_user(github)
     except TokenExpiredError:
         return redirect(url_for("github.login"))
 
     enrollment_state = enroll_user(email, gh_username)
 
     # return payload
-    return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=app_config.GITHUB_ORG, login=login)
+    return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=app_config.GITHUB_ORG, login=gh_username)
 
 
 @app.route("/logout")
