@@ -1,6 +1,6 @@
 import os
 import app_config
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, render_template
 from flask_dance.contrib.azure import make_azure_blueprint, azure
 from flask_dance.contrib.github import make_github_blueprint, github
 from cryptography.hazmat.backends import default_backend
@@ -53,7 +53,7 @@ def get_access_token(installation_id, gh_jwt, permissions):
     installation_id: string
         The installation ID for the application installed in your GitHub organization
     gh_jwt: string
-        The GitHub JSON Web Token (JWT)  
+        The GitHub JSON Web Token (JWT)
     permissions: string
         The permissions/scope for the access token
 
@@ -81,14 +81,14 @@ def add_org_member(access_token, username):
 
     Parameters
     ----------
-    access_token: string   
+    access_token: string
         GitHub installation access token
     username: string
-        GitHub username 
+        GitHub username
 
     Returns
     -------
-    string 
+    string
         invite state
     """
     headers = {
@@ -102,19 +102,19 @@ def add_org_member(access_token, username):
 
 
 def is_org_member(access_token, username):
-    """ 
+    """
     Add a user to the GitHub Organization
 
     Parameters
     ----------
-    access_token: string   
+    access_token: string
         GitHub installation access token
     username: string
-        GitHub username 
+        GitHub username
 
     Returns
     -------
-    boolean 
+    boolean
         returns if the user is a member of the organization
     """
 
@@ -212,11 +212,17 @@ def index():
 
     gh_member = is_org_member(gh_access_token, login)
 
+    # State for Jinja2 to change UI
+    # valid states are:
+    #   - existing
+    #   - enrolling
+    #   - error
+    enrollment_state = None
+
     # Add user to organization
     if(gh_member):
         # User is already a member of the GitHub Org
-        payload = "You are {} on Azure AD and {} on GitHub\n You are already an Org member".format(
-            email, login)
+        enrollment_state = "existing"
     else:
         # User is not a member of the GitHub Org
         resp = add_org_member(gh_access_token, login)
@@ -225,13 +231,13 @@ def index():
             # Invitation status is pending, so invitation should be available to the user
             # add user mapping
             mapping = store_user_mapping(email, login)
-            payload = "You are {} on Azure AD and {} on GitHub\n Your invitation to join the Org has been sent".format(
-                email, login)
+            enrollment_state = "enrolling"
         else:
             # Unknown invitation status
-            payload = "You are {} on Azure AD and {} on GitHub\n There was an error, please contact Cody Green".format(
-                email, login)
-    return payload
+            enrollment_state = "error"
+
+    # return payload
+    return render_template("index.j2", enrollment_state=enrollment_state, email=email, org=app_config.GITHUB_ORG, login=login)
 
 
 if __name__ == "__main__":
