@@ -1,6 +1,6 @@
 import os
 import app_config
-from flask import Flask, redirect, url_for, render_template
+from flask import Flask, redirect, url_for, render_template, session
 from flask_dance.contrib.azure import make_azure_blueprint, azure
 from flask_dance.contrib.github import make_github_blueprint, github
 from cryptography.hazmat.backends import default_backend
@@ -179,6 +179,7 @@ azure_bp = make_azure_blueprint(
 app.register_blueprint(azure_bp, url_prefix="/login")
 
 # Build GitHub OAuth blueprint
+# related to flask-dance issue #235
 github_bp = make_github_blueprint(
     client_id=app_config.GITHUB_CLIENT_ID,
     client_secret=app_config.GITHUB_CLIENT_SECRET
@@ -249,3 +250,9 @@ def index():
 
 if __name__ == "__main__":
     app.run()
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return render_template("logout.j2")
