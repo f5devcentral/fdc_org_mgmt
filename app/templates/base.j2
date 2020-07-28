@@ -31,23 +31,7 @@
         </div>
     </nav>
     <div class="container">
-        {% if enrollment_state == "enrolling" %}
-        <div class="alert alert-success" role="alert">
-            <h4 class="alert-heading">Enrollment Successful</h4>
-            <p>{{ email }}, you are now enrolled into the {{ org }} organization with GitHub username {{ login }}. <br /> 
-            An invitation has been sent to the email address associated with your GitHub account.</p>
-        </div>
-        {% elif enrollment_state == "existing" %}
-        <div class="alert alert-warning" role="alert">
-            <h4 class="alert-heading">User Already an Organization Member</h4>
-            <p>{{ email }}, you are already enrolled in the {{ org }} organization with GitHub username {{ login }}.</p>
-        </div>
-        {% elif enrollment_state == "error" %}
-        <div class="alert alert-error" role="alert">
-            <h4 class="alert-heading">User Already an Organization Member</h4>
-            <p>{{ email }}, there was an error while enrolling in the {{ org }} organization with GitHub username {{ login }}.</p>
-        </div>
-        {% endif %}
+        {% block content %} {% endblock %}
     </div>
 
     <!-- Optional JavaScript -->
