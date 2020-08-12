@@ -1,0 +1,38 @@
+# serverless.yml
+service: fdc-org-mgmt
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+  - serverless-domain-manager
+custom:
+  wsgi:
+    app: app.app
+    packRequirements: false
+  pythonRequirements:
+    dockerizePip: non-linux
+  customDomain:
+    domainName: fdc-org-mgmt-dev.f5demos.com
+    basePath: ""
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+provider:
+  name: aws
+  runtime: python3.8
+  stage: dev
+  region: us-east-1
+  environment:
+    AZURE_CLIENT_ID: ${env:AZURE_CLIENT_ID}
+    AZURE_CLIENT_SECRET: ${env:AZURE_CLIENT_SECRET}
+    GITHUB_CLIENT_ID: ${env:GITHUB_CLIENT_ID}
+    GITHUB_CLIENT_SECRET: ${env:GITHUB_CLIENT_SECRET}
+    GITHUB_APP_ID: ${env:GITHUB_APP_ID}
+    GITHUB_ORG: ${env:GITHUB_ORG}
+    GITHUB_INSTALLATION_ID: ${env:GITHUB_INSTALLATION_ID}
+    SECRET_KEY: ${env:SECRET_KEY}
+    GITHUB_APP_KEY: ${file(./privateSL.pem)}
+  functions:
+    app:
+      handler: wsgi_handler.handler
+      events:
+        - http: "ANY /"
+        - http: "ANY {proxy+}"

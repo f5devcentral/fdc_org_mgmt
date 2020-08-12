@@ -1,6 +1,6 @@
 import os
 
-USER_MAPPING_FILE_PATH = "./app/data/user_mapping.json"
+USER_MAPPING_FILE_PATH = "./data/user_mapping.json"
 
 # Application (client) ID of app registration
 AZURE_CLIENT_ID = os.getenv("AZURE_CLIENT_ID")
