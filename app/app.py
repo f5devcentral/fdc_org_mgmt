@@ -134,6 +134,8 @@ def get_access_token(installation_id, gh_jwt, permissions):
         headers=headers,
         data=permissions)
 
+    print(resp.json())
+
     return (resp.json()["token"])
 
 

@@ -13,6 +13,8 @@ if not AZURE_CLIENT_SECRET:
     raise ValueError(
         "Need to define AZURE_CLIENT_SECRET environment variable")
 
+AZURE_SCOPE = ["User.ReadBasic.All", "profile", "openid", "User.Read", "email"]
+
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
 if not GITHUB_CLIENT_ID:
     raise ValueError(
@@ -47,5 +49,3 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError(
         "Need to define SECRET_KEY environment variable")
-
-AZURE_SCOPE = ["User.ReadBasic.All", "profile", "openid", "User.Read", "email"]
