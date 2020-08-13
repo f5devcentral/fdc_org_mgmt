@@ -11,7 +11,8 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
   customDomain:
-    domainName: fdc-org-mgmt-dev.f5demos.com
+    domainName: management-dev.f5demos.com
+    certificateName: 'management-dev.f5demos.com'
     basePath: ""
     stage: ${self:provider.stage}
     createRoute53Record: true
@@ -30,9 +31,10 @@ provider:
     GITHUB_INSTALLATION_ID: ${env:GITHUB_INSTALLATION_ID}
     SECRET_KEY: ${env:SECRET_KEY}
     GITHUB_APP_KEY: ${file(./privateSL.pem)}
-  functions:
-    app:
-      handler: wsgi_handler.handler
-      events:
-        - http: "ANY /"
-        - http: "ANY {proxy+}"
+functions:
+  app:
+    handler: wsgi_handler.handler
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
+ 
