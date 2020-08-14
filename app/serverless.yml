@@ -26,17 +26,9 @@ provider:
   stage: dev
   region: us-east-1
   environment:
-    AZURE_CLIENT_ID: ${env:AZURE_CLIENT_ID}
-    AZURE_CLIENT_SECRET: ${env:AZURE_CLIENT_SECRET}
-    GITHUB_CLIENT_ID: ${env:GITHUB_CLIENT_ID}
-    GITHUB_CLIENT_SECRET: ${env:GITHUB_CLIENT_SECRET}
-    GITHUB_APP_ID: ${env:GITHUB_APP_ID}
-    GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
-    GITHUB_ORG: ${env:GITHUB_ORG}
-    GITHUB_INSTALLATION_ID: ${env:GITHUB_INSTALLATION_ID}
-    SECRET_KEY: ${env:SECRET_KEY}
     FQDN: ${env:FQDN}
-    DYNAMODB_URL: ${env:DYNAMODB_URL}
+    SECRET_NAME: ${env:SECRET_NAME}
+    GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
   iamRoleStatements:
     - Effect: Allow
       Action:
