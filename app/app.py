@@ -9,11 +9,20 @@ import jwt
 import requests
 import time
 import json
+import boto3
 
 # Define the Flask app
 app = Flask(__name__)
 # Load configuration
 app.config.from_object(app_config)
+
+# setup DynamoDB connection
+if not app_config.DYNAMODB_URL:
+    dynamodb = boto3.resource(
+        'dynamodb', region_name=app_config.REGION)
+else:
+    dynamodb = boto3.resource(
+        'dynamodb', endpoint_url=app_config.DYNAMODB_URL)
 
 
 def add_org_member(access_token, username):
@@ -38,6 +47,7 @@ def add_org_member(access_token, username):
     }
     resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(app_config.GITHUB_ORG, username),
                         headers=headers)
+    # print(resp)
     assert resp.ok
     return resp.json()["state"]
 
@@ -134,9 +144,12 @@ def get_access_token(installation_id, gh_jwt, permissions):
         headers=headers,
         data=permissions)
 
-    print(resp.json())
+    # print(resp.json())
 
-    return (resp.json()["token"])
+    if "token" not in resp.json():
+        raise Exception("get_access_token: no token in the response")
+    else:
+        return (resp.json()["token"])
 
 
 def get_azure_user(az):
@@ -192,15 +205,28 @@ def is_enrolled(email):
     boolean
         If the user exists in the mapping file
     """
-    with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
-        json_object = json.load(openfile)
+    table = dynamodb.Table(app_config.DYNAMODB_TABLE)
+    response = table.get_item(
+        Key={
+            'email': email
+        }
+    )
 
-    user_exists = False
-    for user in json_object["users"]:
-        if email.lower() in user:
-            user_exists = True
+    if "Item" in response:
+        # print(response['Item'])
+        return True
+    else:
+        return False
 
-    return user_exists
+    # with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
+    #     json_object = json.load(openfile)
+
+    # user_exists = False
+    # for user in json_object["users"]:
+    #     if email.lower() in user:
+    #         user_exists = True
+
+    # return user_exists
 
 
 def is_org_member(access_token, username):
@@ -249,23 +275,31 @@ def store_user_mapping(email, username):
     object
         Python object representing the user
     """
+    table = dynamodb.Table(app_config.DYNAMODB_TABLE)
+    response = table.put_item(
+        Item={
+            'email': email,
+            'username': username
+        }
+    )
+    return response
 
-    # Open json file
-    with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
-        json_object = json.load(openfile)
+    # # Open json file
+    # with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
+    #     json_object = json.load(openfile)
 
-    user_obj = {email.lower(): {"username": username.lower()}}
-    # add the user mapping if not already present
-    user_exists = is_enrolled(email)
+    # user_obj = {email.lower(): {"username": username.lower()}}
+    # # add the user mapping if not already present
+    # user_exists = is_enrolled(email)
 
-    if not user_exists:
-        json_object["users"].append(user_obj)
+    # if not user_exists:
+    #     json_object["users"].append(user_obj)
 
-    # write the json object back to file
-    with open(app_config.USER_MAPPING_FILE_PATH, "w") as openfile:
-        openfile.write(json.dumps(json_object, indent=4))
+    # # write the json object back to file
+    # with open(app_config.USER_MAPPING_FILE_PATH, "w") as openfile:
+    #     openfile.write(json.dumps(json_object, indent=4))
 
-    return user_obj
+    # return user_obj
 
 
 # Build Azure OAuth blueprint

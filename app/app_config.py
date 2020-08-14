@@ -49,3 +49,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError(
         "Need to define SECRET_KEY environment variable")
+
+DYNAMODB_URL = os.getenv("DYNAMODB_URL")
+DYNAMODB_TABLE = "fdc_user_mapping"
+REGION = "us-east-1"

@@ -4,6 +4,7 @@ plugins:
   - serverless-python-requirements
   - serverless-wsgi
   - serverless-domain-manager
+  - serverless-dynamodb-local
 custom:
   wsgi:
     app: app.app
@@ -16,6 +17,9 @@ custom:
     basePath: ""
     stage: ${self:provider.stage}
     createRoute53Record: true
+  dynamodb:
+    stages:
+      - dev
 provider:
   name: aws
   runtime: python3.8
@@ -24,19 +28,41 @@ provider:
   environment:
     AZURE_CLIENT_ID: ${env:AZURE_CLIENT_ID}
     AZURE_CLIENT_SECRET: ${env:AZURE_CLIENT_SECRET}
-    AZURE_REDIRECT_URL: ${env:AZURE_REDIRECT_URL}
     GITHUB_CLIENT_ID: ${env:GITHUB_CLIENT_ID}
     GITHUB_CLIENT_SECRET: ${env:GITHUB_CLIENT_SECRET}
     GITHUB_APP_ID: ${env:GITHUB_APP_ID}
+    GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
     GITHUB_ORG: ${env:GITHUB_ORG}
     GITHUB_INSTALLATION_ID: ${env:GITHUB_INSTALLATION_ID}
     SECRET_KEY: ${env:SECRET_KEY}
-    GITHUB_APP_KEY: ${file(./gh_lambda.pem)}
-    GITHUB_REDIRECT_URL: ${env:GITHUB_REDIRECT_URL}
     FQDN: ${env:FQDN}
+    DYNAMODB_URL: ${env:DYNAMODB_URL}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: "*"
 functions:
   app:
     handler: wsgi_handler.handler
     events:
       - http: ANY /
       - http: "ANY {proxy+}"
+resources:
+  Resources:
+    usersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: fdc_user_mapping
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
