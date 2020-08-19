@@ -1,2 +1,10 @@
 .vscode/**
 *.pem
+
+#NPM
+app/node_modules
+app/node_modules/*
+
+#Serverless Framework
+app/.serverless
+app/.dynamodb

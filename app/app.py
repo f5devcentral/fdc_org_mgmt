@@ -9,11 +9,22 @@ import jwt
 import requests
 import time
 import json
+import boto3
+import base64
+from botocore.exceptions import ClientError
 
 # Define the Flask app
 app = Flask(__name__)
 # Load configuration
 app.config.from_object(app_config)
+
+# setup DynamoDB connection
+if "localhost" in app_config.FQDN:
+    dynamodb = boto3.resource(
+        'dynamodb', endpoint_url="http://localhost:8000")
+else:
+    dynamodb = boto3.resource(
+        'dynamodb', region_name=app_config.REGION)
 
 
 def add_org_member(access_token, username):
@@ -36,8 +47,9 @@ def add_org_member(access_token, username):
         "Authorization": "Token {}".format(access_token),
         "Accept": "application/vnd.github.v3+json"
     }
-    resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(app_config.GITHUB_ORG, username),
+    resp = requests.put("https://api.github.com/orgs/{}/memberships/{}".format(secrets['GITHUB_ORG'], username),
                         headers=headers)
+    # print(resp)
     assert resp.ok
     return resp.json()["state"]
 
@@ -64,20 +76,27 @@ def create_jwt(app_id):
         # JWT expiration time
         'exp': time_since_epoch_in_seconds + (10 * 60),
         # GitHub App ID
-        'iss': app_config.GITHUB_APP_ID
+        'iss': secrets['GITHUB_APP_ID_LOCAL'] if "localhost" in app_config.FQDN else secrets['GITHUB_APP_ID']
     }
 
-    return jwt.encode(
-        payload, app_config.GITHUB_APP_KEY, algorithm='RS256')
+    # gh_app_key = secrets['GITHUB_APP_SECRET_LOCAL'] if "localhost" in app_config.FQDN else secrets['GITHUB_APP_SECRET']
+    gh_app_key = os.getenv("GITHUB_APP_KEY")
+
+    if not gh_app_key:
+        raise Exception("create_jwt: Github Private Key not loaded")
+
+    return jwt.encode(payload, gh_app_key, algorithm='RS256')
 
 
 def enroll_user(email, gh_username):
     # Create JWT Token for installation authentication
-    gh_jwt = create_jwt(app_config.GITHUB_APP_ID)
+    gh_app_id = secrets['GITHUB_APP_ID_LOCAL'] if "localhost" in app_config.FQDN else secrets['GITHUB_APP_ID']
+    gh_jwt = create_jwt(gh_app_id)
 
     # Get Access Token
+    gh_app_install_id = secrets['GITHUB_INSTALLATION_ID_LOCAL'] if "localhost" in app_config.FQDN else secrets['GITHUB_INSTALLATION_ID']
     gh_access_token = get_access_token(
-        app_config.GITHUB_INSTALLATION_ID, gh_jwt, '{"members": "write"}')
+        gh_app_install_id, gh_jwt, '{"members": "write"}')
 
     # State for Jinja2 to change UI
     # valid states are:
@@ -134,7 +153,10 @@ def get_access_token(installation_id, gh_jwt, permissions):
         headers=headers,
         data=permissions)
 
-    return (resp.json()["token"])
+    if "token" not in resp.json():
+        raise Exception("get_access_token: no token in the response")
+    else:
+        return (resp.json()["token"])
 
 
 def get_azure_user(az):
@@ -176,6 +198,65 @@ def get_github_user(gh):
     return github_resp.json()["login"]
 
 
+def get_secret():
+    """
+    Get a secrets from the AWS Secret Manager
+    Code is based on AWS examples
+
+    Returns
+    -------
+    string
+        Secret
+    """
+    secret_name = app_config.SECRET_NAME
+    region_name = app_config.REGION
+
+    # Create a Secrets Manager client
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    # In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
+    # See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+    # We rethrow the exception by default.
+
+    try:
+        get_secret_value_response = client.get_secret_value(
+            SecretId=secret_name
+        )
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'DecryptionFailureException':
+            # Secrets Manager can't decrypt the protected secret text using the provided KMS key.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InternalServiceErrorException':
+            # An error occurred on the server side.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidParameterException':
+            # You provided an invalid value for a parameter.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'InvalidRequestException':
+            # You provided a parameter value that is not valid for the current state of the resource.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+        elif e.response['Error']['Code'] == 'ResourceNotFoundException':
+            # We can't find the resource that you asked for.
+            # Deal with the exception here, and/or rethrow at your discretion.
+            raise e
+    else:
+        # Decrypts secret using the associated KMS CMK.
+        # Depending on whether the secret is a string or binary, one of these fields will be populated.
+        if 'SecretString' in get_secret_value_response:
+            return json.loads(get_secret_value_response['SecretString'])
+        else:
+            return json.loads(base64.b64decode(
+                get_secret_value_response['SecretBinary']))
+
+
 def is_enrolled(email):
     """
     Checks if the user exists in the mapping file
@@ -190,15 +271,17 @@ def is_enrolled(email):
     boolean
         If the user exists in the mapping file
     """
-    with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
-        json_object = json.load(openfile)
+    table = dynamodb.Table(app_config.USERS_TABLE)
+    response = table.get_item(
+        Key={
+            'email': email
+        }
+    )
 
-    user_exists = False
-    for user in json_object["users"]:
-        if email.lower() in user:
-            user_exists = True
-
-    return user_exists
+    if "Item" in response:
+        return True
+    else:
+        return False
 
 
 def is_org_member(access_token, username):
@@ -222,7 +305,7 @@ def is_org_member(access_token, username):
         "Authorization": "Token {}".format(access_token),
         "Accept": "application/vnd.github.v3+json"
     }
-    resp = requests.get("https://api.github.com/orgs/{}/members/{}".format(app_config.GITHUB_ORG, username),
+    resp = requests.get("https://api.github.com/orgs/{}/members/{}".format(secrets['GITHUB_ORG'], username),
                         headers=headers)
 
     if resp.status_code != 204:
@@ -247,38 +330,46 @@ def store_user_mapping(email, username):
     object
         Python object representing the user
     """
+    table = dynamodb.Table(app_config.USERS_TABLE)
+    response = table.put_item(
+        Item={
+            'email': email,
+            'username': username
+        }
+    )
+    return response
 
-    # Open json file
-    with open(app_config.USER_MAPPING_FILE_PATH, "r") as openfile:
-        json_object = json.load(openfile)
 
-    user_obj = {email.lower(): {"username": username.lower()}}
-    # add the user mapping if not already present
-    user_exists = is_enrolled(email)
+# get secrets
+secrets = get_secret()
+if not secrets:
+    raise Exception('Unable to load secrets')
+# print(secrets)
 
-    if not user_exists:
-        json_object["users"].append(user_obj)
-
-    # write the json object back to file
-    with open(app_config.USER_MAPPING_FILE_PATH, "w") as openfile:
-        openfile.write(json.dumps(json_object, indent=4))
-
-    return user_obj
-
+# Set Key for Flask Dance
+app.secret_key = secrets['SECRET_KEY']
 
 # Build Azure OAuth blueprint
 azure_bp = make_azure_blueprint(
-    client_id=app_config.AZURE_CLIENT_ID,
-    client_secret=app_config.AZURE_CLIENT_SECRET,
+    client_id=secrets['AZURE_CLIENT_ID'],
+    client_secret=secrets['AZURE_CLIENT_SECRET'],
     scope=app_config.AZURE_SCOPE
 )
 app.register_blueprint(azure_bp, url_prefix="/login")
 
 # Build GitHub OAuth blueprint
 # related to flask-dance issue #235
+# check if we're doing local development
+if "localhost" in app_config.FQDN:
+    gh_client_id = secrets['GITHUB_CLIENT_ID_LOCAL']
+    gh_client_secret = secrets['GITHUB_CLIENT_SECRET_LOCAL']
+else:
+    gh_client_id = secrets['GITHUB_CLIENT_ID']
+    gh_client_secret = secrets['GITHUB_CLIENT_SECRET']
+
 github_bp = make_github_blueprint(
-    client_id=app_config.GITHUB_CLIENT_ID,
-    client_secret=app_config.GITHUB_CLIENT_SECRET
+    client_id=gh_client_id,
+    client_secret=gh_client_secret
 )
 app.register_blueprint(github_bp, url_prefix="/login")
 
@@ -291,7 +382,7 @@ def index():
     if not github.authorized:
         return redirect(url_for("github.login"))
 
-    return render_template("index.j2", user_exists=is_enrolled(get_azure_user(azure)), org=app_config.GITHUB_ORG)
+    return render_template("index.j2", user_exists=is_enrolled(get_azure_user(azure)), org=secrets['GITHUB_ORG'])
 
 
 if __name__ == "__main__":
@@ -314,7 +405,7 @@ def enroll():
 
     # check if user is already enrolled
     if is_enrolled(email):
-        return render_template("error.j2", msg="User is already enrolled in the {} GitHub Organization".format(app_config.GITHUB_ORG))
+        return render_template("error.j2", msg="User is already enrolled in the {} GitHub Organization".format(secrets['GITHUB_ORG']))
 
     # Get GitHub username
     try:
@@ -325,7 +416,7 @@ def enroll():
     enrollment_state = enroll_user(email, gh_username)
 
     # return payload
-    return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=app_config.GITHUB_ORG, login=gh_username)
+    return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=secrets['GITHUB_ORG'], login=gh_username)
 
 
 @app.route("/logout")

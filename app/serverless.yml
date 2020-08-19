@@ -1,0 +1,70 @@
+# serverless.yml
+service: fdc-org-mgmt
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+  - serverless-domain-manager
+  - serverless-dynamodb-local
+custom:
+  wsgi:
+    app: app.app
+    packRequirements: false
+  pythonRequirements:
+    dockerizePip: non-linux
+  customDomain:
+    domainName: ${env:FQDN}
+    certificateName: ${env:FQDN}
+    basePath: ""
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+  dynamodb:
+    stages:
+      - dev
+provider:
+  name: aws
+  runtime: python3.8
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  environment:
+    FQDN: ${env:FQDN}
+    GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
+    SECRET_NAME: ${env:SECRET_NAME}
+    USERS_TABLE: ${self:service}-${self:provider.stage}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - "Fn::GetAtt": [usersTable, Arn]
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: ${env:SECRET_ARN}
+functions:
+  app:
+    handler: wsgi_handler.handler
+    events:
+      - http: ANY /
+      - http: "ANY {proxy+}"
+resources:
+  Resources:
+    usersTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USERS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
