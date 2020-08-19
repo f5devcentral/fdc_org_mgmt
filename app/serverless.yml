@@ -37,6 +37,10 @@ provider:
         - dynamodb:GetItem
         - dynamodb:PutItem
       Resource: "*"
+    - Effect: Allow
+      Action:
+        - secretsmanager:GetSecretValue
+      Resource: ${env:SECRET_ARN}
 functions:
   app:
     handler: wsgi_handler.handler
