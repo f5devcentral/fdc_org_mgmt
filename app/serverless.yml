@@ -36,7 +36,10 @@ provider:
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:PutItem
-      Resource: "*"
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - "Fn::GetAtt": [usersTable, Arn]
     - Effect: Allow
       Action:
         - secretsmanager:GetSecretValue
