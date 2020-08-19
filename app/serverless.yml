@@ -23,12 +23,13 @@ custom:
 provider:
   name: aws
   runtime: python3.8
-  stage: dev
-  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
   environment:
     FQDN: ${env:FQDN}
-    SECRET_NAME: ${env:SECRET_NAME}
     GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
+    SECRET_NAME: ${env:SECRET_NAME}
+    USERS_TABLE: ${self:service}-${self:provider.stage}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -55,7 +56,7 @@ resources:
     usersTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: fdc_user_mapping
+        TableName: ${self:provider.environment.USERS_TABLE}
         AttributeDefinitions:
           - AttributeName: email
             AttributeType: S

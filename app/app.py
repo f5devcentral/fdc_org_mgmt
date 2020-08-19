@@ -271,7 +271,7 @@ def is_enrolled(email):
     boolean
         If the user exists in the mapping file
     """
-    table = dynamodb.Table(secrets['DYNAMODB_TABLE'])
+    table = dynamodb.Table(app_config.USERS_TABLE)
     response = table.get_item(
         Key={
             'email': email
@@ -330,7 +330,7 @@ def store_user_mapping(email, username):
     object
         Python object representing the user
     """
-    table = dynamodb.Table(secrets['DYNAMODB_TABLE'])
+    table = dynamodb.Table(app_config.USERS_TABLE)
     response = table.put_item(
         Item={
             'email': email,
