@@ -382,7 +382,12 @@ def index():
     if not github.authorized:
         return redirect(url_for("github.login"))
 
-    return render_template("index.j2", user_exists=is_enrolled(get_azure_user(azure)), org=secrets['GITHUB_ORG'])
+    try:
+        response = render_template("index.j2", user_exists=is_enrolled(
+            get_azure_user(azure)), org=secrets['GITHUB_ORG'])
+        return response
+    except TokenExpiredError:
+        return redirect("/logout")
 
 
 if __name__ == "__main__":
