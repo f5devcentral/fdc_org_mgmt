@@ -88,7 +88,7 @@ def create_jwt(app_id):
     return jwt.encode(payload, gh_app_key, algorithm='RS256')
 
 
-def enroll_user(email, gh_username):
+def enroll_user(email, givenName, surname, gh_username):
     # Create JWT Token for installation authentication
     gh_app_id = secrets['GITHUB_APP_ID_LOCAL'] if "localhost" in app_config.FQDN else secrets['GITHUB_APP_ID']
     gh_jwt = create_jwt(gh_app_id)
@@ -116,7 +116,8 @@ def enroll_user(email, gh_username):
         if(resp == "pending"):
             # Invitation status is pending, so invitation should be available to the user
             # add user mapping
-            mapping = store_user_mapping(email, gh_username)
+            mapping = store_user_mapping(
+                email, givenName, surname, gh_username)
             enrollment_state = "enrolling"
         else:
             # Unknown invitation status
@@ -176,7 +177,9 @@ def get_azure_user(az):
 
     azure_resp = azure.get("/v1.0/me")
     assert azure_resp.ok
-    return azure_resp.json()["userPrincipalName"]
+    payload = azure_resp.json()
+    # print(payload)
+    return payload["userPrincipalName"], payload["givenName"], payload["surname"]
 
 
 def get_github_user(gh):
@@ -195,6 +198,7 @@ def get_github_user(gh):
     """
     github_resp = github.get("/user")
     assert github_resp.ok
+
     return github_resp.json()["login"]
 
 
@@ -314,7 +318,7 @@ def is_org_member(access_token, username):
         return True
 
 
-def store_user_mapping(email, username):
+def store_user_mapping(email, givenName, surname, username):
     """
     Store the mapping between the user's Azure AD email address and GitHub username
 
@@ -334,7 +338,10 @@ def store_user_mapping(email, username):
     response = table.put_item(
         Item={
             'email': email,
-            'username': username
+            'givenName': givenName,
+            'surname': surname,
+            'username': username,
+            'status': "member"
         }
     )
     return response
@@ -382,9 +389,11 @@ def index():
     if not github.authorized:
         return redirect(url_for("github.login"))
 
+    email, givenName, surname = get_azure_user(azure)
+
     try:
         response = render_template("index.j2", user_exists=is_enrolled(
-            get_azure_user(azure)), org=secrets['GITHUB_ORG'])
+            email), org=secrets['GITHUB_ORG'])
         return response
     except TokenExpiredError:
         return redirect("/logout")
@@ -404,7 +413,7 @@ def enroll():
 
     # Get email address
     try:
-        email = get_azure_user(azure)
+        email, givenName, surname = get_azure_user(azure)
     except TokenExpiredError:
         return redirect(url_for("azure.login"))
 
@@ -418,7 +427,7 @@ def enroll():
     except TokenExpiredError:
         return redirect(url_for("github.login"))
 
-    enrollment_state = enroll_user(email, gh_username)
+    enrollment_state = enroll_user(email, givenName, surname, gh_username)
 
     # return payload
     return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=secrets['GITHUB_ORG'], login=gh_username)
