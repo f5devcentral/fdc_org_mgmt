@@ -10,6 +10,9 @@
                 <th scope="col">Email</th>
                 <th scope="col">Username</th>
                 <th scope="col">Status</th>
+                {% if owner is sameas true %}
+                <th scope="col">Action</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -20,6 +23,16 @@
                 <td>{{ user.email }}</td>
                 <td>{{ user.username }}</td>
                 <td>{{ user.status }}</td>
+                {% if owner is sameas true %}
+                <td scope="col">
+                    {% if user.status == "member" %}
+                    <button type="button" class="btn btn-warning">Convert</button>
+                    <button type="button" class="btn btn-danger">Remove</button>
+                    {% else %}
+                    <button type="button" class="btn btn-danger">Remove</button>
+                    {% endif %}
+                    </td>
+                {% endif %}
             </tr>
             {% endfor %}
         </tbody>

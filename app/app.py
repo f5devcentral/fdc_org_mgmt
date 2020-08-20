@@ -203,7 +203,7 @@ def get_github_user(gh):
     """
     github_resp = github.get("/user")
     assert github_resp.ok
-
+    print(github_resp.json())
     return github_resp.json()["login"]
 
 
@@ -312,7 +312,7 @@ def is_enrolled(email):
 
 def is_org_member(access_token, username):
     """
-    Add a user to the GitHub Organization
+    Check if user is a member of the GitHub Organization
 
     Parameters
     ----------
@@ -324,7 +324,7 @@ def is_org_member(access_token, username):
     Returns
     -------
     boolean
-        returns if the user is a member of the organization
+        returns true if the user is a member of the organization
     """
 
     headers = {
@@ -338,6 +338,33 @@ def is_org_member(access_token, username):
         return False
     else:
         return True
+
+
+def is_org_owner():
+    """
+    Check if user is a owner of the GitHub Organization
+
+    Parameters
+    ----------
+    access_token: string
+        GitHub installation access token
+    username: string
+        GitHub username
+
+    Returns
+    -------
+    boolean
+        returns true if the user is an owner of the GitHub organization
+    """
+    github_resp = github.get("/user/memberships/orgs?state=active")
+    assert github_resp.ok
+
+    # loop through orgs and find the desired org
+    for org in github_resp.json():
+        if org['organization']['login'] == secrets['GITHUB_ORG'] and org['role'] == 'admin':
+            return True
+
+    return False
 
 
 def store_user_mapping(email, givenName, surname, username):
@@ -460,7 +487,8 @@ def users():
 
     # get scan from DynamoDB
     users = get_user_mappings()
-    return render_template("users.j2", users=users)
+
+    return render_template("users.j2", users=users, owner=is_org_owner())
 
 
 @app.route("/logout")
