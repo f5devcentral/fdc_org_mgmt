@@ -109,6 +109,11 @@ def enroll_user(email, givenName, surname, gh_username):
     if(is_org_member(gh_access_token, gh_username)):
         # User is already a member of the GitHub Org
         enrollment_state = "existing"
+
+        # check if user mapping exists
+        if not is_enrolled(email):
+            store_user_mapping(email, givenName, surname, gh_username)
+
     else:
         # User is not a member of the GitHub Org
         resp = add_org_member(gh_access_token, gh_username)
