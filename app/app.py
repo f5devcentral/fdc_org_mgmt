@@ -391,7 +391,12 @@ def index():
 
     email, givenName, surname = get_azure_user(azure)
 
-    return render_template("index.j2", user_exists=is_enrolled(email), org=secrets['GITHUB_ORG'])
+    try:
+        response = render_template("index.j2", user_exists=is_enrolled(
+            email), org=secrets['GITHUB_ORG'])
+        return response
+    except TokenExpiredError:
+        return redirect("/logout")
 
 
 if __name__ == "__main__":
