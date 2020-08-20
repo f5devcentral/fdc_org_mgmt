@@ -266,6 +266,23 @@ def get_secret():
                 get_secret_value_response['SecretBinary']))
 
 
+def get_user_mappings():
+    """
+    Return all user mappings in the DynamoDB database
+
+    Returns
+    -------
+    List 
+        list of all user mappings
+    """
+    table = dynamodb.Table(app_config.USERS_TABLE)
+    response = table.scan()
+    if "Items" in response:
+        return response["Items"]
+    else:
+        return None
+
+
 def is_enrolled(email):
     """
     Checks if the user exists in the mapping file
@@ -394,18 +411,13 @@ def index():
     if not github.authorized:
         return redirect(url_for("github.login"))
 
-    email, givenName, surname = get_azure_user(azure)
-
     try:
+        email, givenName, surname = get_azure_user(azure)
         response = render_template("index.j2", user_exists=is_enrolled(
             email), org=secrets['GITHUB_ORG'])
         return response
     except TokenExpiredError:
         return redirect("/logout")
-
-
-if __name__ == "__main__":
-    app.run()
 
 
 @app.route("/enroll")
@@ -438,7 +450,24 @@ def enroll():
     return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=secrets['GITHUB_ORG'], login=gh_username)
 
 
+@app.route("/users")
+def users():
+    # Ensure the user is authenticated against Azure and GitHub
+    if not azure.authorized:
+        return redirect(url_for("azure.login"))
+    if not github.authorized:
+        return redirect(url_for("github.login"))
+
+    # get scan from DynamoDB
+    users = get_user_mappings()
+    return render_template("users.j2", users=users)
+
+
 @app.route("/logout")
 def logout():
     session.clear()
     return render_template("logout.j2")
+
+
+if __name__ == "__main__":
+    app.run()
