@@ -70,15 +70,11 @@ def convert_user(email, username):
             print("user.convert_user github.convert_org_member failed")
         return False
 
-    # update DynamoDB user record
+    # remove DynamoDB user record
     table = dynamodb.Table(app_config.USERS_TABLE)
-    response = table.update_item(
+    response = table.delete_item(
         Key={
             'email': email
-        },
-        UpdateExpression='SET github_role =:val1',
-        ExpressionAttributeValues={
-            ':val1': 'collaborator'
         }
     )
 
