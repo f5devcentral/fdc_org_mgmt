@@ -27,7 +27,7 @@ provider:
   region: ${opt:region, 'us-east-1'}
   environment:
     FQDN: ${env:FQDN}
-    GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
+    # GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
     SECRET_NAME: ${env:SECRET_NAME}
     USERS_TABLE: ${self:service}-${self:provider.stage}
   iamRoleStatements:

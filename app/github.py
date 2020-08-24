@@ -107,8 +107,9 @@ def create_jwt():
         'iss': app_config.SECRETS['GITHUB_APP_ID_LOCAL'] if "localhost" in app_config.FQDN else app_config.SECRETS['GITHUB_APP_ID']
     }
 
-    # gh_app_key = app_config.SECRETS['GITHUB_APP_SECRET_LOCAL'] if "localhost" in app_config.FQDN else app_config.SECRETS['GITHUB_APP_SECRET']
-    gh_app_key = os.getenv("GITHUB_APP_KEY")
+    gh_app_key = "-----BEGIN RSA PRIVATE KEY-----\r\n"
+    gh_app_key += app_config.SECRETS['GITHUB_APP_SECRET_LOCAL'] if "localhost" in app_config.FQDN else app_config.SECRETS['GITHUB_APP_SECRET']
+    gh_app_key += "\r\n-----END RSA PRIVATE KEY-----"
 
     if not gh_app_key:
         raise Exception("create_jwt: Github Private Key not loaded")
