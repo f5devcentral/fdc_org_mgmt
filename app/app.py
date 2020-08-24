@@ -23,6 +23,7 @@ app.secret_key = app_config.SECRETS['SECRET_KEY']
 azure_bp = make_azure_blueprint(
     client_id=app_config.SECRETS['AZURE_CLIENT_ID'],
     client_secret=app_config.SECRETS['AZURE_CLIENT_SECRET'],
+    tenant=app_config.SECRETS['AZURE_TENANT_ID'],
     scope=app_config.AZURE_SCOPE
 )
 app.register_blueprint(azure_bp, url_prefix="/login")
