@@ -1,38 +1,69 @@
-# fdc_org_mgmt
-Application to help onboard and offboard F5 employees to the F5 DevCentral Organization.
+# f5 DevCentral GitHub User Management
+This repository contains a Lambda application to help onboard and offboard F5 employees to the F5 DevCentral GitHub Organization.
 
-Users will be authenticated against Azure and GitHub for enrollment. 
+While this application is used by F5, the code is abstracted enough to work for any GitHub organization that also uses Azure AD for corporate authentication.
+
+
+# User Experience
+## Authentication
+The application authenticates the user against both Azure AD and GitHub.  The user will be redirected to the login.microsftoneline.com to authenticate against the F5 Azure AD tenant and approve the requested OAuth scope.  Once Azure AD authentication is successful, the user will be redirected to github.com to authenticate and approve the requested OAuth scope.  
+
+## Enrollment
+Once the user is successfully authenticated against Azure AD and GitHub, they will see an enroll button on the web page.  Clicking the button will generate a GitHub organization invite that will be sent to the email address associated with the GitHub username.  This email will contain a link allowing the user to access the GitHub organization invite.  
 
 # Development
 
-## Starting a Flask App
+## Requirements
+This application requires that the developer install the [serverless](https://www.serverless.com/framework/docs/providers/aws/guide/installation/) libraries as well as a [local instance of DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html). 
 
+ * The requirements.txt file contains the required python packages and for Flask
+ * the package.json contains the required packages for serverless
+
+## Environment Variables
+The application requires the following environment variables to deploy locally or in AWS:
 | Variable  | Description |
 |-----------|-------------|
-| FLASK_APP | The python file containing the flask application|
-| FLASK_ENV | Tells flask if the app is in development or production for extra debugging |
-| AZURE_CLIENT_ID | Azure Client ID for OAuth authentication |
-| AZURE_CLIENT_SECRET | Azure Client Secret for OAuth authentication |
-| GITHUB_CLIENT_ID | GitHub Client ID for OAuth authentication |
-| GITHUB_CLIENT_SECRET | GitHub Client ID for OAuth authentication |
-| GITHUB_APP_ID | Application ID - generated when you create a GitHub application |
-| GITHUB_APP_KEY | Private Key associated with the GitHub app. Used to generate the JWT |
-| GITHUB_ORG | GitHub Organization Name |
-| GITHUB_INSTALLATION_ID | Installation ID for the app in your organization. Obtain via api: `curl -i -H "Authorization: Bearer YOUR_JWT" -H "Accept: application/vnd.github.machine-man-preview+json" https://api.github.com/app/installations/` |
-| SECRET_KEY | Secret Key for Flask Dance OAuth authentication against Azure and GitHub |
+| APP_DEBUG | A 0 or 1 value to enable advanced debugging |
+| GITHUB_APP_KEY | PEM format of the GitHub Application private key for API calls |
+| SECRET_NAME | AWS Secrets Manager Secret Name |
+| SECRET_ARN | ARN of the AWS Secret Manager Secret |
+
+
+## Serverless Deploy Locally
+To deploy the application locally:
 
 ```bash
-cd app
-export FLASK_APP=app.py
-export FLASK_ENV=development
-export AZURE_CLIENT_ID=enter_your_client_id
-export AZURE_CLIENT_SECRET=enter_your_client_secret
-export GITHUB_CLIENT_ID=enter_your_client_id
-export GITHUB_CLIENT_SECRET=enter_your_client_secret
-export GITHUB_APP_ID=enter_your_app_id
-export GITHUB_APP_KEY=enter_your_app_private_key
-export GITHUB_ORG=enter_your_organization_name
-export GITHUB_INSTALLATION_ID=enter your app installation id
-export SECRET_KEY=enter_your_app_secret_key
-flask run --cert=adhoc
+export APP_DEBUG=1
+export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
+export SECRET_NAME=your_secret_manager_secret_name
+export SECRET_ARN=ARN_of_your_secret_manager_secret
+sls wsgi serve --ssl
+```
+
+in another terminal, start the local instance of DynamoDB:
+```bash
+sls dynamodb start --migrate --stage dev
+```
+
+
+## Serverless Deploy in AWS
+To deploy the application in AWS:
+
+```bash
+export APP_DEBUG=0
+export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
+export SECRET_NAME=your_secret_manager_secret_name
+export SECRET_ARN=ARN_of_your_secret_manager_secret
+sls deploy
+```
+
+### Serverless Remove from AWS
+To remove the application from AWS:
+
+```bash
+export APP_DEBUG=0
+export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
+export SECRET_NAME=your_secret_manager_secret_name
+export SECRET_ARN=ARN_of_your_secret_manager_secret
+sls remove
 ```
