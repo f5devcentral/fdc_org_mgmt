@@ -6,7 +6,7 @@ name: Serverless Deploy
 # events but only for the master branch
 on:
   push:
-    branches: [ master ]
+    branches: [master]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -17,22 +17,22 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
-    
-    # NPM install
-    - name: npm install
-      uses: actions/npm@master
-      with:
-        args: install
-    # Serverless
-    - name: serverless deploy
-      uses: serverless/github-action@master
-      with:
-        args: deploy
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        FQDN: ${{ secrets.FQDN }}
-        ROLE_ARN: ${{ secrets.ROLE_ARN }}
-        SECRET_NAME: ${{ secrets.SECRET_NAME }}
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      # NPM install
+      - name: npm install
+        run: sudo apt install npm
+        shell: cmd
+
+      # Serverless
+      - name: serverless deploy
+        uses: serverless/github-action@master
+        with:
+          args: deploy
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          FQDN: ${{ secrets.FQDN }}
+          ROLE_ARN: ${{ secrets.ROLE_ARN }}
+          SECRET_NAME: ${{ secrets.SECRET_NAME }}
