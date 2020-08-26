@@ -90,15 +90,21 @@ def convert_user(email, username):
 
 
 def enroll_user(email, givenName, surname, gh_username):
+    if app_config.APP_DEBUG:
+        print("users.enroll_user: start")
+
     # State for Jinja2 to change UI
     # valid states are:
-    #   - existing
-    #   - enrolling
+    #   - active
+    #   - pending
     #   - error
     enrollment_state = None
 
     # Add user to organization
     if(is_org_member(gh_username)):
+        if app_config.APP_DEBUG:
+            print("users.enroll_user: user is already a GitHub Org member")
+
         # User is already a member of the GitHub Org
         enrollment_state = "existing"
 
@@ -109,17 +115,23 @@ def enroll_user(email, givenName, surname, gh_username):
     else:
         # User is not a member of the GitHub Org
         resp = add_org_member(gh_username)
+        if app_config.APP_DEBUG:
+            print("users.enroll_user: user is not a GitHub Org member")
+            print("users.enroll_user: add_org_member response: {}".format(resp))
 
-        if(resp == "pending"):
+        if(resp == "pending" or resp == "active"):
             # Invitation status is pending, so invitation should be available to the user
             # add user mapping
             mapping = add_user(
                 email, givenName, surname, gh_username)
-            enrollment_state = "enrolling"
+            enrollment_state = resp
         else:
             # Unknown invitation status
             enrollment_state = "error"
 
+    if app_config.APP_DEBUG:
+        print("users.enroll_user: enrollment_state: {}".format(enrollment_state))
+        print("users.enroll_user: stop")
     return enrollment_state
 
 
@@ -175,11 +187,19 @@ def is_enrolled(email):
     boolean
         If the user exists in the mapping file
     """
+    if app_config.APP_DEBUG:
+        print("users.is_enrolled: start")
 
     user = get_user(email)
     if user is not None:
+        if app_config.APP_DEBUG:
+            print("users.is_enrolled: user is already mapped to a GitHub username")
+            print("users.is_enrolled: end")
         return True
     else:
+        if app_config.APP_DEBUG:
+            print("users.is_enrolled: user is not not mapped to a GitHub username")
+            print("users.is_enrolled: end")
         return False
 
 
