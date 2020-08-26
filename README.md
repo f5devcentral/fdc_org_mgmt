@@ -24,6 +24,7 @@ The application requires the following environment variables to deploy locally o
 | Variable  | Description |
 |-----------|-------------|
 | APP_DEBUG | A 0 or 1 value to enable advanced debugging |
+| ROLE_ARN | ARN of the AWS Role to allow lambda access to required resources | 
 | GITHUB_APP_KEY | PEM format of the GitHub Application private key for API calls |
 | SECRET_NAME | AWS Secrets Manager Secret Name |
 | SECRET_ARN | ARN of the AWS Secret Manager Secret |
@@ -35,6 +36,7 @@ To deploy the application locally:
 ```bash
 export APP_DEBUG=1
 export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
+export ROLE_ARN=your_lambda_role_arn
 export SECRET_NAME=your_secret_manager_secret_name
 export SECRET_ARN=ARN_of_your_secret_manager_secret
 sls wsgi serve --ssl
@@ -52,6 +54,7 @@ To deploy the application in AWS:
 ```bash
 export APP_DEBUG=0
 export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
+export ROLE_ARN=your_lambda_role_arn
 export SECRET_NAME=your_secret_manager_secret_name
 export SECRET_ARN=ARN_of_your_secret_manager_secret
 sls deploy
@@ -63,6 +66,7 @@ To remove the application from AWS:
 ```bash
 export APP_DEBUG=0
 export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
+export ROLE_ARN=your_lambda_role_arn
 export SECRET_NAME=your_secret_manager_secret_name
 export SECRET_ARN=ARN_of_your_secret_manager_secret
 sls remove
