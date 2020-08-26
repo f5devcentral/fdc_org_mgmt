@@ -47,6 +47,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Setup AWS Credentials
+      - name: Serverless AWS Credentials
+        run: serverless config credentials --provider aws --key ${{ secrets.AWS_ACCESS_KEY_ID }} --secret ${{ secrets.AWS_ACCESS_KEY_ID }}
+
       # Deploy Serverless function
       - name: deploy app function
         run: sls deploy --stage prod
