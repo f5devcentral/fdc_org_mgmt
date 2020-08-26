@@ -25,26 +25,11 @@ provider:
   runtime: python3.8
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
+  role: ${env:ROLE_ARN}
   environment:
     FQDN: ${env:FQDN}
-    # GITHUB_APP_KEY: ${env:GITHUB_APP_KEY}
     SECRET_NAME: ${env:SECRET_NAME}
     USERS_TABLE: ${self:service}-${self:provider.stage}
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource:
-        - "Fn::GetAtt": [usersTable, Arn]
-    - Effect: Allow
-      Action:
-        - secretsmanager:GetSecretValue
-      Resource: ${env:SECRET_ARN}
 functions:
   app:
     handler: wsgi_handler.handler
