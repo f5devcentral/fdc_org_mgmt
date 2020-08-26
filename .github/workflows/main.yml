@@ -28,11 +28,13 @@ jobs:
         run: sudo apt install npm
         shell: bash
 
-      # Serverless
-      - name: serverless deploy
-        uses: serverless/github-action@master
-        with:
-          args: deploy
+      # Install serverless
+      - name: install serverless
+        run: sudo npm i -g serverless
+
+      # Deploy Serverless function
+      - name: deploy app function
+        run: sls deploy
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
