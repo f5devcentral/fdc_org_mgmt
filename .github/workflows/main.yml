@@ -35,13 +35,9 @@ jobs:
       - name: install serverless
         run: sudo npm i -g serverless
 
-      # Install Python and dependencies
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      # Install Node dependencies
+      - name: node dependencies
+        run: npm install
 
       # Deploy Serverless function
       - name: deploy app function
