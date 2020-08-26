@@ -16,7 +16,7 @@ custom:
     certificateName: ${env:FQDN}
     basePath: ""
     stage: ${self:provider.stage}
-    createRoute53Record: true
+    createRoute53Record: false
   dynamodb:
     stages:
       - dev
