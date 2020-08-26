@@ -1,0 +1,38 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Serverless Deploy
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+    - uses: actions/checkout@v2
+    
+    # NPM install
+    - name: npm install
+      uses: actions/npm@master
+      with:
+        args: install
+    # Serverless
+    - name: serverless deploy
+      uses: serverless/github-action@master
+      with:
+        args: deploy
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        FQDN: ${{ secrets.FQDN }}
+        ROLE_ARN: ${{ secrets.ROLE_ARN }}
+        SECRET_NAME: ${{ secrets.SECRET_NAME }}
