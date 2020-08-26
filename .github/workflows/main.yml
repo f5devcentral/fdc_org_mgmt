@@ -28,6 +28,7 @@ jobs:
       # Serverless
       - name: serverless deploy
         uses: serverless/github-action@master
+        working-directory: ./app
         with:
           args: deploy
         env:
