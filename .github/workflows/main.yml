@@ -17,6 +17,9 @@ jobs:
     defaults:
       run:
         working-directory: ./app
+    strategy:
+      matrix:
+        python-version: [3.8]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -31,6 +34,14 @@ jobs:
       # Install serverless
       - name: install serverless
         run: sudo npm i -g serverless
+
+      # Install Python and dependencies
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       # Deploy Serverless function
       - name: deploy app function
