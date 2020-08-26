@@ -1,13 +1,13 @@
 {% extends 'base.j2' %}
 
 {% block content %}
-    {% if enrollment_state == "enrolling" %}
+    {% if enrollment_state == "pending" %}
         <div class="alert alert-success" role="alert">
             <h4 class="alert-heading">Enrollment Successful</h4>
             <p>{{ email }}, you are now enrolled into the {{ org }} organization with GitHub username {{ login }}. <br /> 
             An invitation has been sent to the email address associated with your GitHub account.</p>
         </div>
-        {% elif enrollment_state == "existing" %}
+        {% elif enrollment_state == "active" %}
         <div class="alert alert-warning" role="alert">
             <h4 class="alert-heading">User Already an Organization Member</h4>
             <p>{{ email }}, you are already enrolled in the {{ org }} organization with GitHub username {{ login }}.</p>

@@ -70,6 +70,9 @@ def enroll():
     if not github.authorized:
         return redirect(url_for("github.login"))
 
+    if app_config.APP_DEBUG:
+        print("app.enroll: start")
+
     # Get email address
     try:
         email, givenName, surname = get_azure_user(azure)
@@ -78,7 +81,9 @@ def enroll():
 
     # check if user is already enrolled
     if is_enrolled(email):
-        return render_template("error.j2", msg="User is already enrolled in the {} GitHub Organization".format(app_config.SECRETS['GITHUB_ORG']))
+        if app_config.APP_DEBUG:
+            print("app.enroll: user is already enrolled")
+        return render_template("error.j2", msg="User is already mapped to a user in the {} GitHub Organization".format(app_config.SECRETS['GITHUB_ORG']))
 
     # Get GitHub username
     try:
@@ -87,7 +92,11 @@ def enroll():
         return redirect(url_for("github.login"))
 
     enrollment_state = enroll_user(email, givenName, surname, gh_username)
+    if app_config.APP_DEBUG:
+        print("app.enroll: enrollment_state: {}".format(enrollment_state))
 
+    if app_config.APP_DEBUG:
+        print("app.enroll: end")
     # return payload
     return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=app_config.SECRETS['GITHUB_ORG'], login=gh_username)
 
