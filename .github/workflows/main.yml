@@ -56,3 +56,4 @@ jobs:
           FQDN: ${{ secrets.FQDN }}
           ROLE_ARN: ${{ secrets.ROLE_ARN }}
           SECRET_NAME: ${{ secrets.SECRET_NAME }}
+          SLS_DEBUG: "*"
