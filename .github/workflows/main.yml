@@ -23,7 +23,7 @@ jobs:
       # NPM install
       - name: npm install
         run: sudo apt install npm
-        shell: cmd
+        shell: bash
 
       # Serverless
       - name: serverless deploy
