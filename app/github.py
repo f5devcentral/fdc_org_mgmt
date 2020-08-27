@@ -191,7 +191,7 @@ def is_org_member(username):
         returns true if the user is a member of the organization
     """
     # Create JWT Token for installation authentication
-    access_token = create_jwt()
+    access_token = get_access_token('{"members": "read"}')
 
     headers = {
         "Authorization": "Token {}".format(access_token),

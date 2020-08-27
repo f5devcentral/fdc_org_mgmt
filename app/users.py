@@ -106,7 +106,7 @@ def enroll_user(email, givenName, surname, gh_username):
             print("users.enroll_user: user is already a GitHub Org member")
 
         # User is already a member of the GitHub Org
-        enrollment_state = "existing"
+        enrollment_state = "active"
 
         # check if user mapping exists
         if not is_enrolled(email):
