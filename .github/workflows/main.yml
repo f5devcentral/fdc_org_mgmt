@@ -59,8 +59,6 @@ jobs:
       - name: deploy app function
         run: sls deploy --conceal
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
           FQDN: ${{ secrets.FQDN }}
           ROLE_ARN: ${{ secrets.ROLE_ARN }}
           SECRET_NAME: ${{ secrets.SECRET_NAME }}
