@@ -57,7 +57,7 @@ jobs:
 
       # Deploy Serverless function
       - name: deploy app function
-        run: sls deploy --conceal
+        run: sls deploy --stage prod --conceal
         env:
           FQDN: ${{ secrets.FQDN }}
           ROLE_ARN: ${{ secrets.ROLE_ARN }}
