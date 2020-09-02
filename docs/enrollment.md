@@ -21,3 +21,8 @@ If you are already a member of the GitHub organization you'll receive a warning 
 
 If you are not a member of the GitHub organziation, you'll receive a success notice telling you to check the email address associated with your GitHub account for an invite to the requested organization. 
 ![Enrolled](images/enrolled.png)
+
+### Finish Enrollment
+To finish enrollment, you will need to complete the instruction GitHub emailed to your associated email address.
+
+![Finish Enrollment](images/finish_enrollment.png)
