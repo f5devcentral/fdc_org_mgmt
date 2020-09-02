@@ -5,6 +5,7 @@ While this application is used by F5, the code is abstracted enough to work for 
 
 
 ## User Experience
+For detailed documentation on the enrollment process, view the [enrollment documentation](/docs/enrollment.md).
 ### Authentication
 The application authenticates the user against both Azure AD and GitHub.  The user will be redirected to https://login.microsftoneline.com to authenticate against the configured Azure AD tenant and approve the requested OAuth scope.  Once Azure AD authentication is successful, the user will be redirected to https://github.com to authenticate and approve the requested OAuth scope.  
 
