@@ -94,7 +94,17 @@ def create_jwt():
     string
         JSON Web Token (JWT) to use while requesting an GitHub Access Token
     """
-    app_id = app_config.SECRETS['GITHUB_APP_ID_LOCAL'] if "localhost" in app_config.FQDN else app_config.SECRETS['GITHUB_APP_ID']
+    if app_config.APP_DEBUG:
+        print("github.create_jwt: start")
+
+    app_id, app_secret, installation_id = get_gh_app_data()
+
+    if not app_id or not app_secret or not installation_id:
+        if app_config.APP_DEBUG:
+            print(
+                "github.remove_org_member: app_id, app_secret or installation_id not returned")
+        raise Exception(
+            "github.create_jwt: get_gh_app_data did not return all required variables")
 
     time_since_epoch_in_seconds = int(time.time())
 
@@ -104,15 +114,18 @@ def create_jwt():
         # JWT expiration time
         'exp': time_since_epoch_in_seconds + (10 * 60),
         # GitHub App ID
-        'iss': app_config.SECRETS['GITHUB_APP_ID_LOCAL'] if "localhost" in app_config.FQDN else app_config.SECRETS['GITHUB_APP_ID']
+        'iss': app_id
     }
 
     gh_app_key = "-----BEGIN RSA PRIVATE KEY-----\r\n"
-    gh_app_key += app_config.SECRETS['GITHUB_APP_SECRET_LOCAL'] if "localhost" in app_config.FQDN else app_config.SECRETS['GITHUB_APP_SECRET']
+    gh_app_key += app_secret
     gh_app_key += "\r\n-----END RSA PRIVATE KEY-----"
 
     if not gh_app_key:
-        raise Exception("create_jwt: Github Private Key not loaded")
+        raise Exception("github.create_jwt: Github Private Key not loaded")
+
+    if app_config.APP_DEBUG:
+        print("github.remove_org_member: end")
 
     return jwt.encode(payload, gh_app_key, algorithm='RS256')
 
@@ -135,8 +148,15 @@ def get_access_token(permissions):
     string
         Access token for Application API calls (not as the authenticated user)
     """
+    app_id, app_secret, installation_id = get_gh_app_data()
 
-    installation_id = app_config.SECRETS['GITHUB_INSTALLATION_ID_LOCAL'] if "localhost" in app_config.FQDN else app_config.SECRETS['GITHUB_INSTALLATION_ID']
+    if not app_id or not app_secret or not installation_id:
+        if app_config.APP_DEBUG:
+            print(
+                "github.remove_org_member: app_id, app_secret or installation_id not returned")
+        raise Exception(
+            "github.create_jwt: get_gh_app_data did not return all required variables")
+
     gh_jwt = create_jwt()
 
     headers = {
@@ -153,6 +173,34 @@ def get_access_token(permissions):
         raise Exception("get_access_token: no token in the response")
     else:
         return (resp.json()["token"])
+
+
+def get_gh_app_data():
+    """
+    Get the correct GitHub App ID, App Secret and Installation ID based upon the serverless stage 
+
+    Parameters
+    ----------
+    stage: string
+        serverless stage (prod, dev, local)
+
+    Returns
+    -------
+    list(string, string, string)
+        GitHub Application ID, GitHub Application Secret, Github Installation ID
+    """
+    append = None
+    if "prod" in app_config.STAGE:
+        append = ""
+    elif "dev" in app_config.STAGE:
+        append = "_DEV"
+    elif "local" in app_config.STAGE:
+        append = "_LOCAL"
+    else:
+        raise Exception(
+            "github.get_gh_app_data: Invalid stage {}".format(stage))
+
+    return app_config.SECRETS['GITHUB_APP_ID'+append], app_config.SECRETS['GITHUB_APP_SECRET'+append], app_config.SECRETS['GITHUB_INSTALLATION_ID'+append]
 
 
 def get_github_user(github):

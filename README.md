@@ -39,14 +39,24 @@ export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
 export ROLE_ARN=your_lambda_role_arn
 export SECRET_NAME=your_secret_manager_secret_name
 export SECRET_ARN=ARN_of_your_secret_manager_secret
-sls wsgi serve --ssl
+sls wsgi serve --ssl --stage local
 ```
 
 in another terminal, start the local instance of DynamoDB:
 ```bash
-sls dynamodb start --migrate --stage dev
+sls dynamodb start --migrate --stage local
 ```
 
+### Serverless Deploy Development in AWS
+To deploy the application in AWS:
+
+```bash
+export APP_DEBUG=0
+export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
+export ROLE_ARN=your_lambda_role_arn
+export SECRET_NAME=your_secret_manager_secret_name
+export SECRET_ARN=ARN_of_your_secret_manager_secret
+sls deploy --stage dev
 
 ### Serverless Deploy in AWS
 To deploy the application in AWS:
@@ -57,7 +67,7 @@ export GITHUB_APP_KEY=enter_your_private_key_in_PEM_format
 export ROLE_ARN=your_lambda_role_arn
 export SECRET_NAME=your_secret_manager_secret_name
 export SECRET_ARN=ARN_of_your_secret_manager_secret
-sls deploy
+sls deploy --stage prod
 ```
 
 ### Serverless Remove from AWS

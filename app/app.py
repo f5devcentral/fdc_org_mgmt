@@ -31,13 +31,19 @@ app.register_blueprint(azure_bp, url_prefix="/login")
 # Build GitHub OAuth blueprint
 # related to flask-dance issue #235
 # check if we're doing local development
-if "localhost" in app_config.FQDN:
-    gh_client_id = app_config.SECRETS['GITHUB_CLIENT_ID_LOCAL']
-    gh_client_secret = app_config.SECRETS['GITHUB_CLIENT_SECRET_LOCAL']
+print("STAGE: {}".format(app_config.STAGE))
+append = None
+if "prod" in app_config.STAGE:
+    append = ""
+elif "dev" in app_config.STAGE:
+    append = "_DEV"
+elif "local" in app_config.STAGE:
+    append = "_LOCAL"
 else:
-    gh_client_id = app_config.SECRETS['GITHUB_CLIENT_ID']
-    gh_client_secret = app_config.SECRETS['GITHUB_CLIENT_SECRET']
+    raise Exception("Invalid stage: {}".format(app_config.STAGE))
 
+gh_client_id = app_config.SECRETS['GITHUB_CLIENT_ID' + append]
+gh_client_secret = app_config.SECRETS['GITHUB_CLIENT_SECRET' + append]
 github_bp = make_github_blueprint(
     client_id=gh_client_id,
     client_secret=gh_client_secret

@@ -14,11 +14,12 @@ custom:
   customDomain:
     domainName: ${env:FQDN}
     certificateName: ${env:FQDN}
-    basePath: ''
+    basePath: ""
     createRoute53Record: false
   dynamodb:
     stages:
       - dev
+      - local
 provider:
   name: aws
   runtime: python3.8
@@ -28,6 +29,7 @@ provider:
   environment:
     FQDN: ${env:FQDN}
     SECRET_NAME: ${env:SECRET_NAME}
+    STAGE: ${opt:stage, 'dev'}
     USERS_TABLE: ${self:service}-${self:provider.stage}
 functions:
   app:
