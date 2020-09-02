@@ -15,6 +15,9 @@ REGION = "us-east-1"
 SECRET_NAME = os.getenv("SECRET_NAME")
 if not SECRET_NAME:
     raise ValueError("Need to define SECRET_NAME environment variable")
+STAGE = os.getenv("STAGE")
+if not STAGE:
+    raise ValueError("Need to define STAGE environment variable")
 USERS_TABLE = os.getenv("USERS_TABLE")
 if not USERS_TABLE:
     raise ValueError("Need to define USERS_TABLE environment variable")
