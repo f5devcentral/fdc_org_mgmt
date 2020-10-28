@@ -11,6 +11,7 @@ custom:
     packRequirements: false
   pythonRequirements:
     dockerizePip: non-linux
+    useDownloadCache: false
   customDomain:
     domainName: ${env:FQDN}
     certificateName: ${env:FQDN}
