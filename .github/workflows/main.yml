@@ -55,6 +55,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      # Fix sls deploy permission issue
+      - name: fix sls deploy permission issue
+        run: sudo chown -R $USER ~/
+        shell: bash
+        
       # Deploy Serverless function
       - name: deploy app function
         run: sls deploy --stage prod --conceal
