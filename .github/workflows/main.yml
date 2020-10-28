@@ -33,7 +33,7 @@ jobs:
 
       # Install serverless
       - name: install serverless
-        run: npm i -g serverless
+        run: npm i serverless
 
       # Install Node dependencies
       - name: node dependencies
