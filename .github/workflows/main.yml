@@ -33,7 +33,7 @@ jobs:
 
       # Install serverless
       - name: install serverless
-        run: sudo npm i -g serverless
+        run: npm i -g serverless
 
       # Install Node dependencies
       - name: node dependencies
