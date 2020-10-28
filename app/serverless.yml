@@ -10,6 +10,7 @@ custom:
     app: app.app
     packRequirements: false
   pythonRequirements:
+    noDeploy: []
     dockerizePip: non-linux
     useDownloadCache: false
     fileName: ./requirements.txt
