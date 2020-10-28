@@ -8,3 +8,4 @@ app/node_modules/*
 #Serverless Framework
 app/.serverless
 app/.dynamodb
+pythonenv3.8/*

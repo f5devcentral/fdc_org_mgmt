@@ -12,6 +12,7 @@ custom:
   pythonRequirements:
     dockerizePip: non-linux
     useDownloadCache: false
+    fileName: ./requirements.txt
   customDomain:
     domainName: ${env:FQDN}
     certificateName: ${env:FQDN}
