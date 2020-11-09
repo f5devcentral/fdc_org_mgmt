@@ -4,8 +4,8 @@
     {% if enrollment_state == "pending" %}
         <div class="alert alert-success" role="alert">
             <h4 class="alert-heading">Enrollment Successful</h4>
-            <p>{{ email }}, you are now enrolled into the {{ org }} organization with GitHub username {{ login }}. <br /> 
-            An invitation has been sent to the email address associated with your GitHub account.</p>
+            <p>{{ email }}, you need to click the following <a href="https://github.com/orgs/{{ org }}/invitation?via_email=1" target="_blank">link</a> to accept the GitHub invitation.  This process will finish your emrollment into the {{ org }} organization with GitHub username {{ login }}. <br /> 
+            An invitation with the same link has been sent to the email address associated with your GitHub account.</p>
         </div>
         {% elif enrollment_state == "active" %}
         <div class="alert alert-warning" role="alert">
