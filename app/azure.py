@@ -33,6 +33,47 @@ def get_azure_user(azure, user="me"):
         return None
 
 
+def get_azure_users(azure, users):
+    """
+    Get list of user data from Azure Active Directory
+
+    Parameters
+    ----------
+    az: object
+        flask-dance Azure object
+    users: list
+        email addresses
+
+    Returns
+    -------
+    list
+        Azure user principal names (should match email)
+    """
+
+    query_url = "/v1.0/users?$select=userPrincipalName&$filter="
+    count = 0
+
+    # loop through users and add to query
+    for user in users:
+        if count == 0:
+            query_url += "startswith(userPrincipalName,'{}')".format(
+                user['email'])
+        else:
+            query_url += " or startswith(userPrincipalName,'{}')".format(
+                user['email'])
+        count += 1
+
+    azure_resp = azure.get(query_url)
+    assert azure_resp.ok
+
+    # process the response into a list of employees
+    payload = azure_resp.json()
+    employees = []
+    for user in payload["value"]:
+        employees.append(user['userPrincipalName'].lower())
+    return employees
+
+
 def is_employee(azure, email):
     """
     Check if the user exists in Azure AD
