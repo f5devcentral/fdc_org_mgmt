@@ -6,7 +6,7 @@ from flask_dance.contrib.github import make_github_blueprint, github
 from cryptography.hazmat.backends import default_backend
 from oauthlib.oauth2 import TokenExpiredError
 from botocore.exceptions import ClientError
-from azure import get_azure_user, is_employee
+from azure import get_azure_user, get_azure_users, is_employee
 from users import add_user, convert_user, enroll_user, get_user, get_users, is_enrolled, remove_user
 from github import get_github_user, is_org_owner
 import boto3
@@ -218,16 +218,16 @@ def users_audit():
 
     # get scan from DynamoDB
     users = get_users()
+    employees = get_azure_users(azure, users)
     not_employee = []
     for user in users:
-        print(user['email'])
-        if not is_employee(azure, user['email']):
+        if not user['email'].lower() in employees:
             not_employee.append(user)
 
     return render_template("users.j2", title="GitHub User Not Employeed", users=not_employee, owner=owner, action_message=action_message, error_message=error_message)
 
 
-@app.route("/logout")
+@ app.route("/logout")
 def logout():
     session.clear()
     return render_template("logout.j2")
