@@ -6,7 +6,7 @@ from flask_dance.contrib.github import make_github_blueprint, github
 from cryptography.hazmat.backends import default_backend
 from oauthlib.oauth2 import TokenExpiredError
 from botocore.exceptions import ClientError
-from azure import get_azure_user
+from azure import get_azure_user, is_employee
 from users import add_user, convert_user, enroll_user, get_user, get_users, is_enrolled, remove_user
 from github import get_github_user, is_org_owner
 import boto3
@@ -62,7 +62,7 @@ def index():
     try:
         email, givenName, surname = get_azure_user(azure)
         response = render_template("index.j2", user_exists=is_enrolled(
-            email), org=app_config.SECRETS['GITHUB_ORG'])
+            email), owner=is_org_owner(github), org=app_config.SECRETS['GITHUB_ORG'])
         return response
     except TokenExpiredError:
         return redirect("/logout")
@@ -118,6 +118,67 @@ def users():
     # set default action messasge
     action_message = None
     error_message = None
+    owner = is_org_owner(github)
+
+    # process the POST request and ensure post is by org owner
+    if request.method == 'POST' and owner:
+        data = request.form
+
+        # ensure we have the required post data
+        if not data.get('action') or not data.get('email') or not data.get('user'):
+            error_message = "No users or action was supplied"
+
+        action = data.get('action')
+        email = data.get('email')
+        user = data.get('user')
+
+        # determine the requested action
+        if action == "Convert":
+            if app_config.APP_DEBUG:
+                print("app.users: action == Convert")
+            result = convert_user(email, user)
+            if result is not True:
+                error_message = "Unable to convert user to external contributor"
+            else:
+                action_message = "User {} converted to external contributor".format(
+                    user)
+
+        elif action == "Remove":
+            if app_config.APP_DEBUG:
+                print("app.users: action == Remove")
+            result = remove_user(email, user)
+            if result is not True:
+                error_message = "Unable to remove user from GitHub Organization"
+            else:
+                action_message = "User {} removed from GitHub Organization".format(
+                    user)
+
+        else:
+            error_message = "Unsupported user action"
+
+    # get scan from DynamoDB
+    users = get_users()
+
+    return render_template("users.j2", title="GitHub User Mappings", users=users, owner=owner, action_message=action_message, error_message=error_message)
+
+
+@app.route("/users/audit", methods=['GET', 'POST'])
+def users_audit():
+    # Ensure the user is authenticated against Azure and GitHub
+    if not azure.authorized:
+        return redirect(url_for("azure.login"))
+    if not github.authorized:
+        return redirect(url_for("github.login"))
+
+    # set default action messasge
+    action_message = None
+    error_message = None
+
+    # you need to be an owner to run this task
+    owner = is_org_owner(github)
+    if not owner:
+        error_message = "Your do not have permissions to run this task"
+        return render_template("users.j2", title="GitHub User Not Employeed", users=[], owner=owner, action_message=action_message, error_message=error_message)
 
     # process the POST request and ensure post is by org owner
     if request.method == 'POST' and is_org_owner(github):
@@ -157,8 +218,13 @@ def users():
 
     # get scan from DynamoDB
     users = get_users()
+    not_employee = []
+    for user in users:
+        print(user['email'])
+        if not is_employee(azure, user['email']):
+            not_employee.append(user)
 
-    return render_template("users.j2", users=users, owner=is_org_owner(github), action_message=action_message, error_message=error_message)
+    return render_template("users.j2", title="GitHub User Not Employeed", users=not_employee, owner=owner, action_message=action_message, error_message=error_message)
 
 
 @app.route("/logout")
