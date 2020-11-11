@@ -37,6 +37,11 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
                 {% if 'logout' not in request.path %}
+                {% if owner is sameas true %}
+                <li class="nav-item active">
+                    <a class="nav-link" href="/users/audit">Audit</a>
+                </li>
+                {% endif %}
                 <li class="nav-item active">
                     <a class="nav-link" href="/users">Users</a>
                 </li>

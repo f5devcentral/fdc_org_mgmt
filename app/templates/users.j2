@@ -1,7 +1,7 @@
 {% extends 'base.j2' %}
 
 {% block content %}
-    <h2>GitHub User Mappings</h2>
+    <h2>{{ title }}</h2>
     {% if action_message is not none %}
     <div class="alert alert-success" role="alert">
         <p>{{ action_message }}.</p>
