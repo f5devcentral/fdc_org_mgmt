@@ -290,25 +290,24 @@ def users_audit_github():
             if app_config.APP_DEBUG:
                 print("app.users: adding user: {}".format(username))
 
+            # get Azure AD information for the requested user
+            try:
+                ad_email, givenName, surname = get_azure_user(azure, email)
+            except TokenExpiredError:
+                return redirect(url_for("github.login"))
+
+            # ensure a user was returned
+            if ad_email is None:
+                error_message = "Email address not found"
             # ensure the user is not already enrolled
-            if is_enrolled(email):
+            elif is_enrolled(ad_email):
                 error_message = "User is already enrolled"
             else:
-                # get Azure AD information for the requested user
-                try:
-                    ad_email, givenName, surname = get_azure_user(azure, email)
-                except TokenExpiredError:
-                    return redirect(url_for("github.login"))
+                enrollment_state = enroll_user(
+                    ad_email, givenName, surname, username)
 
-                # ensure a user was returned
-                if ad_email is None:
-                    error_message = "Email address not found"
-                else:
-                    enrollment_state = enroll_user(
-                        ad_email, givenName, surname, username)
-
-                    action_message = "User {} has been enrolled as {} {}".format(
-                        username, givenName, surname)
+                action_message = "User {} has been enrolled as {} {}".format(
+                    username, givenName, surname)
 
     # get scan from DynamoDB
     users = get_users()
