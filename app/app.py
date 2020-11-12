@@ -276,6 +276,40 @@ def users_audit_github():
         error_message = "Your do not have permissions to run this task"
         return render_template("gh_users.j2", title="GitHub User Not Employeed", users=[], owner=owner, action_message=action_message, error_message=error_message)
 
+    # process the POST request to add a user
+    if request.method == 'POST' and owner:
+        data = request.form
+
+        # ensure we have the required post data
+        if not data.get('username') or not data.get('email'):
+            error_message = "No username or email address provided"
+        else:
+            email = data.get('email')
+            username = data.get('username')
+
+            if app_config.APP_DEBUG:
+                print("app.users: adding user: {}".format(username))
+
+            # ensure the user is not already enrolled
+            if is_enrolled(email):
+                error_message = "User is already enrolled"
+            else:
+                # get Azure AD information for the requested user
+                try:
+                    ad_email, givenName, surname = get_azure_user(azure, email)
+                except TokenExpiredError:
+                    return redirect(url_for("github.login"))
+
+                # ensure a user was returned
+                if ad_email is None:
+                    error_message = "Email address not found"
+                else:
+                    enrollment_state = enroll_user(
+                        ad_email, givenName, surname, username)
+
+                    action_message = "User {} has been enrolled as {} {}".format(
+                        username, givenName, surname)
+
     # get scan from DynamoDB
     users = get_users()
 

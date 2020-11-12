@@ -30,7 +30,7 @@ def get_azure_user(azure, user="me"):
     if "userPrincipalName" in payload:
         return payload["userPrincipalName"], payload["givenName"], payload["surname"]
     else:
-        return None
+        return None, None, None
 
 
 def get_azure_users(azure, users):

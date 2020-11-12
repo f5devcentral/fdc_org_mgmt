@@ -16,12 +16,23 @@
         <thead>
             <tr>
                 <th scope="col">Username</th>
+                <th scope="col">Email</th>
+                <th scope="col">Action</th>
             </tr>
         </thead>
         <tbody>
             {% for user in users %}
             <tr>
                 <td><p class="text">{{ user }}</p></td>
+                <form action="" method="post">
+                    <td scope="col">
+                        <input type="hidden" name="username" value="{{ user }}" />
+                        <input type="email" name="email" required />
+                    </td>
+                    <td scope="col">
+                        <input type="submit" id="enrollBtn" name="action" value="Enroll" placeholder="Enter F5 email address" class="btn btn-primary" />
+                    </td>
+                </form>
             </tr>
             {% endfor %}
         </tbody>
