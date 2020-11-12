@@ -1,0 +1,29 @@
+{% extends 'base.j2' %}
+
+{% block content %}
+    <h2>{{ title }}</h2>
+    {% if action_message is not none %}
+    <div class="alert alert-success" role="alert">
+        <p>{{ action_message }}.</p>
+    </div>
+    {% endif %}
+    {% if error_message is not none %}
+    <div class="alert alert-warning" role="alert">
+        <p>{{ error_message }}.</p>
+    </div>
+    {% endif %}
+    <table id=users class="table table-striped table-bordered" style="width:100%">
+        <thead>
+            <tr>
+                <th scope="col">Username</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td><p class="text">{{ user }}</p></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

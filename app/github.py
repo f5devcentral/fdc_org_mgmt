@@ -222,6 +222,41 @@ def get_github_user(github):
     return github_resp.json()["login"]
 
 
+def get_github_users():
+    """
+    Get org users data from GitHub
+
+    Parameters
+    ----------
+    gh: object
+        flask-dance GitHub object
+
+    Returns
+    -------
+    list[string] 
+        GitHub username
+    """
+    # Create JWT Token for installation authentication
+    access_token = get_access_token('{"members": "read"}')
+
+    headers = {
+        "Authorization": "Token {}".format(access_token),
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    payload = []
+    # GitHub limits the request to 100 users
+    # TODO: find way to determine how many pages are left
+    for i in range(1, 10):
+        resp = requests.get("https://api.github.com/orgs/{}/members?per_page=100&page={}".format(app_config.SECRETS['GITHUB_ORG'], i),
+                            headers=headers)
+        assert resp.ok
+        for user in resp.json():
+            payload.append(user['login'].lower())
+
+    return payload
+
+
 def is_org_member(username):
     """
     Check if user is a member of the GitHub Organization
