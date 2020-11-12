@@ -8,7 +8,7 @@ from oauthlib.oauth2 import TokenExpiredError
 from botocore.exceptions import ClientError
 from azure import get_azure_user, get_azure_users, is_employee
 from users import add_user, convert_user, enroll_user, get_user, get_users, is_enrolled, remove_user
-from github import get_github_user, is_org_owner
+from github import get_github_user, get_github_users, is_org_owner
 import boto3
 
 # Define the Flask app
@@ -162,8 +162,8 @@ def users():
     return render_template("users.j2", title="GitHub User Mappings", users=users, owner=owner, action_message=action_message, error_message=error_message)
 
 
-@app.route("/users/audit", methods=['GET', 'POST'])
-def users_audit():
+@app.route("/users/audit/employee", methods=['GET', 'POST'])
+def users_audit_employee():
     # Ensure the user is authenticated against Azure and GitHub
     if not azure.authorized:
         return redirect(url_for("azure.login"))
@@ -225,6 +225,33 @@ def users_audit():
             not_employee.append(user)
 
     return render_template("users.j2", title="GitHub User Not Employeed", users=not_employee, owner=owner, action_message=action_message, error_message=error_message)
+
+
+@app.route("/users/audit/github", methods=['GET', 'POST'])
+def users_audit_github():
+    # Ensure the user is authenticated against Azure and GitHub
+    if not azure.authorized:
+        return redirect(url_for("azure.login"))
+    if not github.authorized:
+        return redirect(url_for("github.login"))
+
+    # set default action messasge
+    action_message = None
+    error_message = None
+
+    # you need to be an owner to run this task
+    owner = is_org_owner(github)
+
+    # get scan from DynamoDB
+    users = get_users()
+
+    # get github org members
+    gh_users = get_github_users()
+    for user in users:
+        if user['username'].lower() in gh_users:
+            gh_users.remove(user['username'].lower())
+
+    return render_template("gh_users.j2", title="GitHub User Not Enrolled", users=gh_users, owner=owner, action_message=action_message, error_message=error_message)
 
 
 @ app.route("/logout")
