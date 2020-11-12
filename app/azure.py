@@ -68,7 +68,6 @@ def get_azure_users(azure, users):
                     u2['email'])
             count += 1
 
-        print(query_url)
         azure_resp = azure.get(query_url)
         assert azure_resp.ok
         # process the response into a list of employees
