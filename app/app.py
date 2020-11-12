@@ -6,7 +6,7 @@ from flask_dance.contrib.github import make_github_blueprint, github
 from cryptography.hazmat.backends import default_backend
 from oauthlib.oauth2 import TokenExpiredError
 from botocore.exceptions import ClientError
-from azure import get_azure_user, get_azure_users, is_employee
+from azure import get_azure_user, get_azure_users
 from users import add_user, convert_user, enroll_user, get_user, get_users, is_enrolled, remove_user
 from github import get_github_user, get_github_users, is_org_owner
 import boto3
@@ -60,15 +60,26 @@ def index():
         return redirect(url_for("github.login"))
 
     try:
+        # get user data
         email, givenName, surname = get_azure_user(azure)
-        response = render_template("index.j2", user_exists=is_enrolled(
-            email), owner=is_org_owner(github), org=app_config.SECRETS['GITHUB_ORG'])
-        return response
+
+        # determine if the user is enrolled
+        user_exists = is_enrolled(email)
     except TokenExpiredError:
-        return redirect("/logout")
+        return redirect(url_for("azure.login"))
+
+    # determine if user is a GitHub org owner
+    try:
+        owner = is_org_owner(github)
+    except TokenExpiredError:
+        return redirect(url_for("github.login"))
+
+    response = render_template("index.j2", user_exists=user_exists,
+                               owner=owner, org=app_config.SECRETS['GITHUB_ORG'])
+    return response
 
 
-@app.route("/enroll")
+@ app.route("/enroll")
 def enroll():
     # Ensure the user is authenticated against Azure and GitHub
     if not azure.authorized:
@@ -107,7 +118,7 @@ def enroll():
     return render_template("enroll.j2", enrollment_state=enrollment_state, email=email, org=app_config.SECRETS['GITHUB_ORG'], login=gh_username)
 
 
-@app.route("/users", methods=['GET', 'POST'])
+@ app.route("/users", methods=['GET', 'POST'])
 def users():
     # Ensure the user is authenticated against Azure and GitHub
     if not azure.authorized:
@@ -118,7 +129,12 @@ def users():
     # set default action messasge
     action_message = None
     error_message = None
-    owner = is_org_owner(github)
+
+    # determine if user is a GitHub org owner
+    try:
+        owner = is_org_owner(github)
+    except TokenExpiredError:
+        return redirect(url_for("github.login"))
 
     # process the POST request and ensure post is by org owner
     if request.method == 'POST' and owner:
@@ -162,7 +178,7 @@ def users():
     return render_template("users.j2", title="GitHub User Mappings", users=users, owner=owner, action_message=action_message, error_message=error_message)
 
 
-@app.route("/users/audit/employee", methods=['GET', 'POST'])
+@ app.route("/users/audit/employee", methods=['GET', 'POST'])
 def users_audit_employee():
     # Ensure the user is authenticated against Azure and GitHub
     if not azure.authorized:
@@ -175,13 +191,18 @@ def users_audit_employee():
     error_message = None
 
     # you need to be an owner to run this task
-    owner = is_org_owner(github)
+    # determine if user is a GitHub org owner
+    try:
+        owner = is_org_owner(github)
+    except TokenExpiredError:
+        return redirect(url_for("github.login"))
+
     if not owner:
         error_message = "Your do not have permissions to run this task"
         return render_template("users.j2", title="GitHub User Not Employeed", users=[], owner=owner, action_message=action_message, error_message=error_message)
 
     # process the POST request and ensure post is by org owner
-    if request.method == 'POST' and is_org_owner(github):
+    if request.method == 'POST' and owner:
         data = request.form
 
         # ensure we have the required post data
@@ -218,7 +239,12 @@ def users_audit_employee():
 
     # get scan from DynamoDB
     users = get_users()
-    employees = get_azure_users(azure, users)
+    # Get email address
+    try:
+        employees = get_azure_users(azure, users)
+    except TokenExpiredError:
+        return redirect(url_for("azure.login"))
+
     not_employee = []
     for user in users:
         if not user['email'].lower() in employees:
@@ -227,7 +253,7 @@ def users_audit_employee():
     return render_template("users.j2", title="GitHub User Not Employeed", users=not_employee, owner=owner, action_message=action_message, error_message=error_message)
 
 
-@app.route("/users/audit/github", methods=['GET', 'POST'])
+@ app.route("/users/audit/github", methods=['GET', 'POST'])
 def users_audit_github():
     # Ensure the user is authenticated against Azure and GitHub
     if not azure.authorized:
@@ -240,7 +266,15 @@ def users_audit_github():
     error_message = None
 
     # you need to be an owner to run this task
-    owner = is_org_owner(github)
+    # determine if user is a GitHub org owner
+    try:
+        owner = is_org_owner(github)
+    except TokenExpiredError:
+        return redirect(url_for("github.login"))
+
+    if not owner:
+        error_message = "Your do not have permissions to run this task"
+        return render_template("gh_users.j2", title="GitHub User Not Employeed", users=[], owner=owner, action_message=action_message, error_message=error_message)
 
     # get scan from DynamoDB
     users = get_users()

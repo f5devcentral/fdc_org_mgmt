@@ -77,34 +77,3 @@ def get_azure_users(azure, users):
             employees.append(user['userPrincipalName'].lower())
 
     return employees
-
-
-def is_employee(azure, email):
-    """
-    Check if the user exists in Azure AD
-
-    Parameters
-    ----------
-    az: object
-        flask-dance Azure object
-    user: string
-        Azure AD email address
-
-    Returns
-    -------
-    boolean
-        If the user exists in Azure AD
-    """
-    if app_config.APP_DEBUG:
-        print("users.is_employee: start")
-
-    if get_azure_user(azure, email):
-        if app_config.APP_DEBUG:
-            print("users.is_employee: {} is an employee".format(email))
-            print("users.is_employee: end")
-        return True
-    else:
-        if app_config.APP_DEBUG:
-            print("users.is_employee: {} is not an employee".format(email))
-            print("users.is_employee: end")
-        return False
