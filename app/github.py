@@ -222,7 +222,7 @@ def get_github_user(github):
     return github_resp.json()["login"]
 
 
-def get_github_users():
+def get_github_users(mfa_disabled=False):
     """
     Get org users data from GitHub
 
@@ -248,8 +248,12 @@ def get_github_users():
     # GitHub limits the request to 100 users
     # TODO: find way to determine how many pages are left
     for i in range(1, 10):
-        resp = requests.get("https://api.github.com/orgs/{}/members?per_page=100&page={}".format(app_config.SECRETS['GITHUB_ORG'], i),
-                            headers=headers)
+        resp = requests.get("https://api.github.com/orgs/{}/members?per_page=100&page={}{}".format(
+            app_config.SECRETS['GITHUB_ORG'],
+            i,
+            "&filter=2fa_disabled" if mfa_disabled is True else ""
+        ),
+            headers=headers)
         assert resp.ok
         for user in resp.json():
             payload.append(user['login'].lower())

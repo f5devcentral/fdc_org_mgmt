@@ -321,6 +321,42 @@ def users_audit_github():
     return render_template("gh_users.j2", title="GitHub User Not Enrolled", users=gh_users, owner=owner, action_message=action_message, error_message=error_message)
 
 
+@ app.route("/users/audit/github/mfa")
+def users_audit_github_mfa():
+    # Ensure the user is authenticated against Azure and GitHub
+    if not azure.authorized:
+        return redirect(url_for("azure.login"))
+    if not github.authorized:
+        return redirect(url_for("github.login"))
+
+    # set default action messasge
+    action_message = None
+    error_message = None
+
+    # you need to be an owner to run this task
+    # determine if user is a GitHub org owner
+    try:
+        owner = is_org_owner(github)
+    except TokenExpiredError:
+        return redirect(url_for("github.login"))
+
+    if not owner:
+        error_message = "Your do not have permissions to run this task"
+        return render_template("gh_users.j2", title="GitHub User Not Employeed", users=[], owner=owner, action_message=action_message, error_message=error_message)
+
+    # get scan from DynamoDB
+    users = get_users()
+    non_mfa_users = []
+
+    # get github org members
+    gh_users = get_github_users(mfa_disabled=True)
+    for user in users:
+        if user['username'].lower() in gh_users:
+            non_mfa_users.append(user)
+
+    return render_template("users.j2", title="GitHub User Without MFA", users=non_mfa_users, owner=owner, action_message=action_message, error_message=error_message)
+
+
 @ app.route("/logout")
 def logout():
     session.clear()
