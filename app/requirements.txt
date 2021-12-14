@@ -8,7 +8,7 @@ Flask-Dance==3.0.0
 idna==2.10
 itsdangerous==1.1.0
 Jinja2==2.11.3
-jwt==1.0.0
+jwt>=1.0.0
 MarkupSafe==1.1.1
 oauthlib==3.1.0
 pycparser==2.20
