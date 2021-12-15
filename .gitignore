@@ -9,3 +9,5 @@ app/node_modules/*
 app/.serverless
 app/.dynamodb
 pythonenv3.8/*
+
+venv/**
