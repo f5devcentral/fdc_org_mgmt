@@ -121,13 +121,19 @@ def create_jwt():
     gh_app_key += app_secret
     gh_app_key += "\r\n-----END RSA PRIVATE KEY-----"
 
-    if not gh_app_key:
+    try:
+        enc_gh_app_key = bytes(gh_app_key,'UTF-8')
+        signing_key = jwt.jwk_from_pem(enc_gh_app_key)
+    except Exception as e:
         raise Exception("github.create_jwt: Github Private Key not loaded")
+ 
+    instance = jwt.JWT()
+    token = instance.encode(payload, signing_key, alg='RS256')
 
     if app_config.APP_DEBUG:
         print("github.remove_org_member: end")
 
-    return jwt.encode(payload, gh_app_key, algorithm='RS256')
+    return token
 
 
 def get_access_token(permissions):
@@ -160,7 +166,7 @@ def get_access_token(permissions):
     gh_jwt = create_jwt()
 
     headers = {
-        "Authorization": "Bearer {}".format(gh_jwt.decode()),
+        "Authorization": "Bearer {}".format(gh_jwt),
         "Accept": "application/vnd.github.machine-man-preview+json"
     }
     resp = requests.post(
