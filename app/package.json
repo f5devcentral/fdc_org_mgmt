@@ -12,7 +12,7 @@
   "dependencies": {},
   "devDependencies": {
     "serverless-domain-manager": "^4.2.0",
-    "serverless-dynamodb-local": "^0.2.39",
+    "serverless-dynamodb-local": "^1.0.2",
     "serverless-python-requirements": "^5.1.0",
     "serverless-wsgi": "^1.7.5"
   }
