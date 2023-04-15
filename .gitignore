@@ -11,3 +11,6 @@ app/.dynamodb
 pythonenv3.8/*
 
 venv/**
+api/.env
+
+**/__pycache__/**

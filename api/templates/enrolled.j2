@@ -1,0 +1,40 @@
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.teams.card.o365connector",
+            "content": {
+                "@type": "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "summary":  "Cody Green requested to enroll in F5DevCentral GitHub Organization",
+                "title": "Enroll in F5DevCentral GitHub Organization",
+                "sections": [
+                    {
+                        "activityTitle": "Enroll Cody Green",
+                        "activitySubtitle": "Org: F5DevCentral",
+                        "activityImage": "https://avatars.githubusercontent.com/u/19864766?s=96&v=4"
+                    },
+                    {
+                        "title": "Details",
+                        "facts": [
+                            {
+                                "name": "GitHub Username",
+                                "value": "codygreen"
+                            }
+                        ]
+                    }
+                ],
+                "potentialAction": [
+                    {
+                        "@context": "http://schema.org",
+                        "@type": "ViewAction",
+                        "name": "View in GitHub",
+                        "target": [
+                            "https://github.com/orgs/f5devcentral/people/codygreen"
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

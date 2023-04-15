@@ -1,0 +1,3 @@
+python-dotenv==1.0.0
+fastapi==0.95.1
+Jinja2==3.1.2
