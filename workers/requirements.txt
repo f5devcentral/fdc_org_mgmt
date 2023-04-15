@@ -1,0 +1,2 @@
+msgraph_user @git+https://github.com/codygreen/msgraph_user@db0d2ab0aca7bfc8e021d1efabbb50ec893877b3
+boto3>=1.26.114
