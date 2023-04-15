@@ -14,3 +14,4 @@ venv/**
 api/.env
 
 **/__pycache__/**
+api/config.cfg

@@ -6,17 +6,21 @@
             "content": {
                 "@type": "MessageCard",
                 "@context": "http://schema.org/extensions",
-                "summary":  "Cody Green requested to enroll in F5DevCentral GitHub Organization",
-                "title": "Enroll in F5DevCentral GitHub Organization",
+                "summary":  "{{user.surname}} {{user.given_name}} requested to enroll in F5DevCentral GitHub Organization",
+                "title": "Enroll {{user.surname}} in F5DevCentral GitHub Organization",
                 "sections": [
                     {
-                        "activityTitle": "Enroll Cody Green",
+                        "activityTitle": "Enroll {{user.surname}} {{user.given_name}}",
                         "activitySubtitle": "Org: F5DevCentral",
                         "activityImage": "https://avatars.githubusercontent.com/u/19864766?s=96&v=4"
                     },
                     {
                         "title": "Details",
                         "facts": [
+                            {
+                                "name": "Azure AD email",
+                                "value": "{{user.mail}}"
+                            },
                             {
                                 "name": "GitHub Username",
                                 "value": "codygreen"
