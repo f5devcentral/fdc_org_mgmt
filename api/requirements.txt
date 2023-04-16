@@ -1,4 +1,4 @@
 python-dotenv==1.0.0
 fastapi==0.95.1
 Jinja2==3.1.2
-msgraph_user @git+https://github.com/codygreen/msgraph_user@818d4a61c43c47cdbdf86bc68e75281de30dc968
+msgraph_user @git+https://github.com/codygreen/msgraph_user@217ee3c64387f86ceba6753c7112240d90241bf8

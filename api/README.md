@@ -7,7 +7,7 @@ API to enroll users into the F5DevCentral GitHub Organization
 ### Install Requirements
 
 ```bash
-python -m pip install requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 ### Start API server
