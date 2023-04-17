@@ -1,7 +1,7 @@
 """
 PyGitHub wrapper
 """
-from github import Github, AppAuthentication, UnknownObjectException, NamedUser
+from github import Github, AppAuthentication, UnknownObjectException, NamedUser, GithubException
 
 def unknown_exception(func):
     """
@@ -39,12 +39,13 @@ class User():
         # pylint: enable=C0103
         self.avatar_url = github_user.avatar_url
 
-class UserIsAlreadyAMember(Exception):
+class GhException(Exception):
     """
-    Exception to raise when a user is already a member of an organization
+    Exception to raise when an error occurs
     """
-    def __init__(self):
-        super().__init__("User is already a member of the organization")
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 def user(func):
     """
@@ -100,16 +101,23 @@ class GitHubOrg:
         Returns:
             bool: True if successful, False if not
         """
-        named_user = self.g.get_user(username)
-        if self.o.has_in_members(named_user):
-            raise UserIsAlreadyAMember
-        self.o.add_to_members(named_user)
+        try:
+            named_user = self.g.get_user(username)
+            if self.o.has_in_members(named_user):
+                raise GhException("User is already a member of the organization.")
+            self.o.add_to_members(named_user)
 
-        # TODO: validate that addition to org happens immediately
-        if self.o.has_in_members(named_user):
-            return True
-        else:
-            return False
+            # TODO: validate that addition to org happens immediately
+            if self.o.has_in_members(named_user):
+                return True
+            else:
+                return False
+        except GithubException as error:
+            if error.status == 422:
+                print(f"WTF: {error.data['message']}")
+                raise GhException(error.data['message'])
+            else:
+                raise e
 
     @unknown_exception
     def delete_org_member(self, username):
