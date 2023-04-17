@@ -25,29 +25,6 @@ env = Environment(
 
 app = FastAPI()
 
-# Handle accessing the body twice in middleware
-# https://github.com/tiangolo/fastapi/discussions/8187
-async def set_body(request: Request, body: bytes):
-    """
-    Set the body of the request.
-    :param request: The request object.
-    :param body: The body of the request.
-    :return: None
-    """
-    async def receive() -> Message:
-        return {"type": "http.request", "body": body}
-    request._receive = receive
-
-async def get_body(request: Request) -> bytes:
-    """
-    Get the body of the request.
-    :param request: The request object.
-    :return: The body of the request.
-    """
-    body = await request.body()
-    await set_body(request, body)
-    return body
-
 @app.post("/")
 async def read_root(request: Request):
     """
@@ -71,6 +48,29 @@ async def read_root(request: Request):
         case _:
             template = env.get_template("help.j2")
             return JSONResponse(json.loads(template.render()))
+
+# Handle accessing the body twice in middleware
+# https://github.com/tiangolo/fastapi/discussions/8187
+async def set_body(request: Request, body: bytes):
+    """
+    Set the body of the request.
+    :param request: The request object.
+    :param body: The body of the request.
+    :return: None
+    """
+    async def receive() -> Message:
+        return {"type": "http.request", "body": body}
+    request._receive = receive
+
+async def get_body(request: Request) -> bytes:
+    """
+    Get the body of the request.
+    :param request: The request object.
+    :return: The body of the request.
+    """
+    body = await request.body()
+    await set_body(request, body)
+    return body
 
 @app.middleware("http")
 async def validate_signature(request: Request, call_next):
