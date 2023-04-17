@@ -11,7 +11,7 @@ from starlette.types import Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 from dotenv import load_dotenv
 from msgraph_user import GraphUser
-from gh import GitHubOrg
+from gh import GitHubOrg, GhException
 
 
 load_dotenv()
@@ -21,6 +21,7 @@ CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TENANT_ID = os.getenv("TENANT_ID")
 GH_APP_ID = os.getenv("GH_APP_ID")
 GH_INSTALLATION_ID = os.getenv("GH_INSTALLATION_ID")
+GH_ORG = os.getenv("GH_ORG")
 private_key = Path('fdc-user-mgmt.2023-04-15.private-key.pem').read_text()
 
 env = Environment(
@@ -64,7 +65,10 @@ async def read_root(request: Request):
         template = env.get_template("error.j2")
         message = error.message if hasattr(error, 'message') else None
         return JSONResponse(json.loads(template.render({"message": message})))
-
+    except GhException as error:
+        template = env.get_template("error.j2")
+        message = str(error) if hasattr(error, 'message') else None
+        return JSONResponse(json.loads(template.render({"message": message})))
 
 async def enroll_user(user_id: str, github_username: str):
     """
@@ -78,6 +82,9 @@ async def enroll_user(user_id: str, github_username: str):
     if user is None:
         raise FDCError("User not found.")
     # TODO: Add user to GitHub organization
+    gh = GitHubOrg(GH_ORG, GH_APP_ID, private_key, GH_INSTALLATION_ID)
+    if gh.add_org_member(github_username) is False:
+        raise FDCError("Could not add user to GitHub organization.")
     # TODO: Update database
     template = env.get_template("enrolled.j2")
     return JSONResponse(json.loads(template.render({"user": user})))

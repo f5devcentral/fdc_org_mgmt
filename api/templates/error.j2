@@ -1,1 +1,5 @@
+{% if message is none %}
+{ "type": "message", "text": "Error: Something went wrong" }
+{% else %}
 { "type": "message", "text": "Error: {{message}}" }
+{% endif %}
