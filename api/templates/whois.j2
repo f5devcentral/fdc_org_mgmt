@@ -1,0 +1,44 @@
+{
+    "type": "message",
+    "attachments": [
+        {
+            "contentType": "application/vnd.microsoft.teams.card.o365connector",
+            "content": {
+                "@type": "MessageCard",
+                "@context": "http://schema.org/extensions",
+                "summary":  "Github User",
+                "title": "Github user",
+                "sections": [
+                    {
+                        "activityTitle": "GH USER",
+                        "activitySubtitle": "Org: F5DevCentral",
+                        "activityImage": "https://avatars.githubusercontent.com/u/19864766?s=96&v=4"
+                    },
+                    {
+                        "title": "Details",
+                        "facts": [
+                            {
+                                "name": "Azure AD email",
+                                "value": "test@f5.com"
+                            },
+                            {
+                                "name": "GitHub Username",
+                                "value": "codygreen"
+                            }
+                        ]
+                    }
+                ],
+                "potentialAction": [
+                    {
+                        "@context": "http://schema.org",
+                        "@type": "ViewAction",
+                        "name": "View in GitHub",
+                        "target": [
+                            "https://github.com/orgs/f5devcentral/people/codygreen"
+                        ]
+                    }
+                ]
+            }
+        }
+    ]
+}

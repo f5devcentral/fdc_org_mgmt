@@ -4,12 +4,14 @@ import hmac
 import hashlib
 import json
 import os
+from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from starlette.types import Message
 from jinja2 import Environment, PackageLoader, select_autoescape
 from dotenv import load_dotenv
 from msgraph_user import GraphUser
+from gh import GitHubOrg
 
 
 load_dotenv()
@@ -17,6 +19,9 @@ WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET")
 CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 TENANT_ID = os.getenv("TENANT_ID")
+GH_APP_ID = os.getenv("GH_APP_ID")
+GH_INSTALLATION_ID = os.getenv("GH_INSTALLATION_ID")
+private_key = Path('fdc-user-mgmt.2023-04-15.private-key.pem').read_text()
 
 env = Environment(
     loader=PackageLoader("main", "templates"),
@@ -25,6 +30,12 @@ env = Environment(
 
 app = FastAPI()
 
+class FDCError(Exception):
+    """Exception to raise when an error occurs."""
+    def __init__(self, message):
+        super().__init__(message)
+        self.message = message
+
 @app.post("/")
 async def read_root(request: Request):
     """
@@ -32,22 +43,72 @@ async def read_root(request: Request):
     :param request: The request object.
     :return: The response object.
     """
-
+    try: 
     # determine action
-    match request.state.action:
-        case 'enroll':
-            graph = GraphUser(CLIENT_ID, CLIENT_SECRET, TENANT_ID)
-            user = await graph.get_user_by_id(request.state.user_id)
-            print(f'User ID: {request.state.user_id}')
-            if user is not None:
-                template = env.get_template("enrolled.j2")
-                return JSONResponse(json.loads(template.render({"user": user})))
-            else:
-                template = env.get_template("error.j2")
-                return JSONResponse(json.loads(template.render({"message": "User not found."})))
-        case _:
-            template = env.get_template("help.j2")
-            return JSONResponse(json.loads(template.render()))
+        match request.state.action:
+            case 'enroll':
+                if request.state.argument is None:
+                    raise FDCError("Missing argument.")
+                return await enroll_user(request.state.user_id, request.state.argument)
+            case 'status':
+                return await status_user(request.state.user_id)
+            case 'whois':
+                if request.state.argument is None:
+                    raise FDCError("Missing argument.")
+                return await whois_user(request.state.argument)
+            case _:
+                print(f'default match: {request.state.action}')
+                template = env.get_template("help.j2")
+                return JSONResponse(json.loads(template.render()))
+    except FDCError as error:
+        template = env.get_template("error.j2")
+        message = error.message if hasattr(error, 'message') else None
+        return JSONResponse(json.loads(template.render({"message": message})))
+
+
+async def enroll_user(user_id: str, github_username: str):
+    """
+    Enroll a user in the GitHub organization.
+    :param user: The Azure AD user ID.
+    :param github_username: The GitHub username.
+    :return: The response object.
+    """
+    graph = GraphUser(CLIENT_ID, CLIENT_SECRET, TENANT_ID)
+    user = await graph.get_user_by_id(user_id)
+    if user is None:
+        raise FDCError("User not found.")
+    # TODO: Add user to GitHub organization
+    # TODO: Update database
+    template = env.get_template("enrolled.j2")
+    return JSONResponse(json.loads(template.render({"user": user})))
+
+async def status_user(user_id: str):
+    """
+    Get the status of a user.
+    :param user_id: The Azure AD user ID.
+    :return: The response object.
+    """
+    graph = GraphUser(CLIENT_ID, CLIENT_SECRET, TENANT_ID)
+    user = await graph.get_user_by_id(user_id)
+    if user is None:
+        raise FDCError("User not found.")
+    # TODO: Check if user is enrolled
+    template = env.get_template("status.j2")
+    return JSONResponse(json.loads(template.render({"user": user})))
+
+async def whois_user(github_username: str):
+    """
+    Get information about a user.
+    :param github_username: The GitHub username.
+    :return: The response object.
+    """
+    # TODO: Get user from database
+    user = "test"
+    if user is None:
+        raise FDCError("User not found.")
+
+    template = env.get_template("whois.j2")
+    return JSONResponse(json.loads(template.render({"user": user})))    
 
 # Handle accessing the body twice in middleware
 # https://github.com/tiangolo/fastapi/discussions/8187
